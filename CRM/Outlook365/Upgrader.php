@@ -9,7 +9,7 @@ class CRM_Outlook365_Upgrader extends CRM_Extension_Upgrader_Base {
   /**
    * Add the data processor from this extension
    *
-   * @throws \CiviCRM_API3_Exception
+   * @throws \CRM_Core_Exception
    */
   public function postInstall() {
     CRM_Dataprocessor_Utils_Extensions::updateDataProcessorsFromExtension('outlook365');
