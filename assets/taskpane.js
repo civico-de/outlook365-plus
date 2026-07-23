@@ -507,7 +507,7 @@
      * Retrieve next batch of contacts.
      */
     function loadNextContacts() {
-      if (!moreAvailable || !config || !search) {
+      if (!moreAvailable || !config) {
         return;
       }
       $('#loadingContacts').show();
