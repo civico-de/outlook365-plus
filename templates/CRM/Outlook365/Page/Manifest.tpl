@@ -11,7 +11,7 @@
   <HighResolutionIconUrl DefaultValue="{$baseurl}assets/CiviCRM-icon-2019-F-small.png"/>
   <SupportUrl DefaultValue="https://www.civicrm.org"/>
   <AppDomains>
-    <AppDomain>civicrm.org</AppDomain>
+    <AppDomain>{$baseurl}</AppDomain>
   </AppDomains>
   <Hosts>
     <Host Name="Mailbox"/>
