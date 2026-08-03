@@ -64,10 +64,13 @@
       });
 
       $("body").delegate(".ms-ListItem", "click", function (event) {
-        if ($(event.target).hasClass('is-selected')) {
-          $(event.target).removeClass('is-selected');
+        if ($(event.target).closest('a, .ms-ListItem-action').length) {
+          return;
+        }
+        if ($(this).hasClass('is-selected')) {
+          $(this).removeClass('is-selected');
         } else {
-          $(event.target).addClass('is-selected');
+          $(this).addClass('is-selected');
         }
       });
 
@@ -110,7 +113,17 @@
             }).done(result => {
               console.log(result);
             });
-            await pushEmailActivity(email.Subject, email.Body.Content, new Date());
+            let emailAddresses = [];
+            ['From'].concat(['ToRecipients', 'CcRecipients', 'BccRecipients']).forEach(function (field) {
+              let recipients = field === 'From' ? (email.From ? [email.From] : []) : (email[field] || []);
+              recipients.forEach(function (recipient) {
+                if (recipient.EmailAddress && recipient.EmailAddress.Address) {
+                  emailAddresses.push(recipient.EmailAddress.Address);
+                }
+              });
+            });
+            let targetContactIds = await getContactIdsByEmail(emailAddresses);
+            await pushEmailActivity(email.Subject, email.Body.Content, new Date(), targetContactIds);
           }
           emailInFolderSavedInfo();
         }).fail(function (error) {
@@ -130,32 +143,63 @@
       $('#saved-email-notice').show();
     }
 
-    async function pushEmailActivity(subject, body, date, from, to) {
-      let emailData = {
-        "source_contact_id": "user_contact_id",
-        "activity_type_id": "Email",
-        "subject": subject,
-        "details": body,
-      }
+    /**
+     * Call a CiviCRM API4 action via the civicrm/ajax/api4 endpoint, using the
+     * site/api key credentials stored in the add-in configuration.
+     *
+     * @param entity
+     * @param action
+     * @param params - the api4 params object (select/where/values/etc).
+     */
+    function api4(entity, action, params) {
+      let url = config.url + '/civicrm/ajax/api4/' + encodeURIComponent(entity) + '/' + encodeURIComponent(action) +
+        '?api_key=' + encodeURIComponent(config.apikey) +
+        '&key=' + encodeURIComponent(config.sitekey);
+      return $.post(url, {params: JSON.stringify(params)});
+    }
 
-      let url = config.url + '?';
-      let data = {
-        "entity": "Activity",
-        "action": "create",
-        "api_key": config.apikey,
-        "key": config.sitekey,
-        "json": 1
-      };
-      for (var prop in data) {
-        if (prop == 'json') {
-          url = url + '&' + prop + '=' + JSON.stringify(data[prop]);
-        } else {
-          url = url + '&' + prop + '=' + data[prop];
-        }
-      }
+    function formatDateTimeForCivi(date) {
+      let hours = String(date.getHours()).padStart(2, "0");
+      let minutes = String(date.getMinutes()).padStart(2, "0");
+      let seconds = String(date.getSeconds()).padStart(2, "0");
+      return date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate() + " " + hours + ":" + minutes + ":" + seconds;
+    }
 
-      await $.post(url, emailData, function (result, status) {
-        console.log(result)
+    /**
+     * Resolve a list of email addresses to CiviCRM contact IDs in a single API4 call,
+     * so the caller doesn't need to look up each contact separately.
+     */
+    async function getContactIdsByEmail(emailAddresses) {
+      let addresses = Array.from(new Set((emailAddresses || []).filter(Boolean)));
+      let contactIds = [];
+      if (!addresses.length) {
+        return contactIds;
+      }
+      await api4('Email', 'get', {
+        select: ['contact_id'],
+        where: [['email', 'IN', addresses]],
+      }).done(function (result) {
+        (result.values || []).forEach(function (row) {
+          if (contactIds.indexOf(row.contact_id) === -1) {
+            contactIds.push(row.contact_id);
+          }
+        });
+      }).fail(function (error) {
+        console.log(error);
+      });
+      return contactIds;
+    }
+
+    async function pushEmailActivity(subject, body, date, targetContactIds) {
+      await api4('Activity', 'create', {
+        values: {
+          "source_contact_id": "user_contact_id",
+          "activity_type_id:name": "Email",
+          "subject": subject,
+          "details": body,
+          "activity_date_time": formatDateTimeForCivi(date),
+          "target_contact_id": targetContactIds,
+        },
       }).fail(response => {
         openDialog(dialogComponent);
       });
@@ -210,7 +254,7 @@
         name = item.displayName
         class_to_add = "to_save"
       }
-      html += '<li class="ms-ListItem is-selectable ' + class_to_add + '">' +
+      html += '<li class="ms-ListItem is-selectable is-selected ' + class_to_add + '">' +
         '<span class="ms-ListItem-secondaryText">' + name + '</span>' +
         '<span class="ms-ListItem-tertiaryText">' + item.emailAddress + '</span>' +
         '<div class="ms-ListItem-actions">' +
@@ -559,61 +603,33 @@
 
     async function saveEmail() {
       var emailBody = null
-      var datetime = new Date(requiredAttendees.dateTimeCreated)
-      var hours = String(datetime.getHours())
-      var seconds = String(datetime.getSeconds())
-      var minutes = String(datetime.getMinutes())
-      datetime = datetime.getFullYear() + "-" + (datetime.getMonth() + 1) + "-" + datetime.getDate()
-
-      datetime = datetime + " " + hours.padStart(2, "0") + ":" + minutes.padStart(2, "0") + ":" + seconds.padStart(2, "0")
       await requiredAttendees.body.getAsync(
         "html",
         async function callback(result) {
           emailBody = result['value']
 
-          var data = {
-            "source_contact_id": "user_contact_id",
-            "activity_type_id": "Email",
-            "subject": requiredAttendees.subject,
-            "details": emailBody,
-            "activity_date_time": datetime.toString(),
-            "target_id": [],
-          }
+          var targetContactIds = []
+          var pendingContacts = []
 
           $('.ms-List').children().each(function (index) {
              let contact = $(this).children(".ms-ListItem-actions").children(".ms-ListItem-action")
              // name,email,already saved
              if ($(this).hasClass('is-selected')) {
                if ($(this).hasClass('to_save')) {
-                 let contactId = saveContactToCRM({"name": contact.data('civicrm-name'), "email": contact.data('civicrm-email')})
-                 data.target_id.push(contactId);
+                 pendingContacts.push(
+                   saveContactToCRM({"name": contact.data('civicrm-name'), "email": contact.data('civicrm-email')})
+                     .then(contactId => targetContactIds.push(contactId))
+                 );
                } else {
-                 data.target_id.push(contact.data('civicrm-id'));
+                 targetContactIds.push(contact.data('civicrm-id'));
                }
              }
           });
-      
-          var url = config.url + '?'
-          var param = {
-            "entity": "Activity",
-            "action": "create",
-            "api_key": config.apikey,
-            "key": config.sitekey,
-            "json": 1
-          };
-          for (var prop in param) {
-            if (prop == 'json') {
-              url = url + '&' + prop + '=' + JSON.stringify(param[prop]);
-            } else {
-              url = url + '&' + prop + '=' + param[prop];
-            }
-          }
-          await $.post(url, data, function (result, status) {
-            console.log(result);
-            addSavedCategoryToCurrentMessage();
-          }).fail(response => {
-            openDialog(dialogComponent);
-          });
+
+          await Promise.all(pendingContacts);
+
+          await pushEmailActivity(requiredAttendees.subject, emailBody, new Date(requiredAttendees.dateTimeCreated), targetContactIds);
+          addSavedCategoryToCurrentMessage();
         });
     }
 

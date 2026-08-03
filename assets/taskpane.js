@@ -33,10 +33,13 @@
     });
 
     $("body").delegate(".ms-ListItem", "click", function (event) {
-      if ($(event.target).hasClass('is-selected')) {
-        $(event.target).removeClass('is-selected');
+      if ($(event.target).closest('a, .ms-ListItem-action').length) {
+        return;
+      }
+      if ($(this).hasClass('is-selected')) {
+        $(this).removeClass('is-selected');
       } else {
-        $(event.target).addClass('is-selected');
+        $(this).addClass('is-selected');
       }
     });
 
