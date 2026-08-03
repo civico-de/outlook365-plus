@@ -8,6 +8,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CiviCRM</title>
   <script type="text/javascript">
+    var crmBaseUrl = '{$site_base_url|escape:'javascript'}';
     var confirmDialogUrl = '{$baseurl}outlook365/settings/confirm.html';
     var settingsDialogUrl = '{$baseurl}outlook365/settings/dialog.html';
     var saveContactDialogUrl = '{$baseurl}outlook365/settings/saveContact.html';

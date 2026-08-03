@@ -13,6 +13,7 @@ class CRM_Outlook365_Page_ReadTaskpane extends CRM_Core_Page {
         $baseUrl = rtrim(CRM_Utils_System::baseURL(), '/') . $baseUrl;
     }
     $this->assign('baseurl', $baseUrl);
+    $this->assign('site_base_url', rtrim(CRM_Utils_System::baseURL(), '/'));
 	$this->assign('contactURL', CRM_Utils_System::url(
 		'civicrm/contact/view',
 		['reset' => 1] ,
