@@ -47,7 +47,7 @@
   };
 
   async function getGroups(config) {
-    var url = config.url + '?';
+    var url = restUrl(config) + '?';
     var data = {
       "entity": "Group",
       "action": "get",
@@ -106,10 +106,17 @@
     return decodeURIComponent(results[2].replace(/\+/g, " "));
   }
 
+  /**
+   * Base URL for APIv3 requests (used by the legacy entity/action/json calls above).
+   */
+  function restUrl(config) {
+    return config.url + '/civicrm/ajax/rest';
+  }
+
   function getConfig() {
     var config = {};
 
-    config.url = Office.context.roamingSettings.get('civicrm_url');
+    config.url = (Office.context.roamingSettings.get('civicrm_url') || '').replace(/\/+$/, '');
     config.sitekey = Office.context.roamingSettings.get('civicrm_sitekey');
     config.apikey = Office.context.roamingSettings.get('civicrm_apikey');
     if (config.url && config.apikey && config.sitekey) {

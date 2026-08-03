@@ -120,6 +120,13 @@
       });
     }
 
+    /**
+     * Base URL for APIv3 requests (used by the legacy entity/action/json calls below).
+     */
+    function restUrl(config) {
+      return config.url + '/civicrm/ajax/rest';
+    }
+
     function savingEmailInFolderInfo() {
       $('#saving-email-notice').show();
       $('#saved-email-notice').hide();
@@ -175,10 +182,11 @@
     async function openSettingsDialog() {
       // Display settings dialog.
       var url = settingsDialogUrl;
-      if (config) {
-        // If the add-in has already been configured, pass the existing values
-        // to the dialog.
-        url = url + '?config=' + JSON.stringify(config);
+      // Pass along existing values, or at least the site's base URL (known
+      // from the server), so the dialog doesn't ask the user to guess it.
+      var prefill = config || (crmBaseUrl ? {url: crmBaseUrl, sitekey: '', apikey: ''} : null);
+      if (prefill) {
+        url = url + '?config=' + JSON.stringify(prefill);
       }
 
       var dialogOptions = {width: 30, height: 40, displayInIframe: true};
@@ -236,7 +244,7 @@
 
     async function saveContactToCRM(contact) {
       let contactName = splitContactName(contact.name);
-      var url = config.url + '?';
+      var url = restUrl(config) + '?';
       var data = {
         "entity": "Contact",
         "action": "create",
@@ -263,7 +271,7 @@
       });
       var contact_id = contact_info.id
 
-      url = config.url + '?';
+      url = restUrl(config) + '?';
       data = {
         "entity": "Email",
         "action": "create",
@@ -388,7 +396,7 @@
     }
 
     async function saveContactGroup(contactId, groupId) {
-      var url = config.url + '?';
+      var url = restUrl(config) + '?';
       var data = {
         "entity": "GroupContact",
         "action": "create",
@@ -415,7 +423,7 @@
     }
 
     async function addGroupToCRM(name) {
-      var url = config.url + '?';
+      var url = restUrl(config) + '?';
       var data = {
         "entity": "Group",
         "action": "create",
@@ -444,7 +452,7 @@
     }
 
     async function checkContact(val) {
-      var url = config.url + '?';
+      var url = restUrl(config) + '?';
       var data = {
         "entity": "Email",
         "action": "get",
@@ -466,11 +474,6 @@
       var contact_url = CRMContactURL
       var contact_name = null
       var contact_id
-      for (const [key, val] of Object.entries(config.url.split("/"))) {
-        if (val == "sites") {
-          break
-        }
-      }
       await $.post(url, function (result, status) {
         exist = false
         if (result["count"] > 0) {
@@ -483,7 +486,7 @@
         openDialog(dialogComponent);
       });
       if (exist) {
-        url = config.url + '?'
+        url = restUrl(config) + '?'
         data = {
           "entity": "Contact",
           "action": "getsingle",
@@ -665,7 +668,7 @@
     async function getConfig() {
       var config = {};
 
-      config.url = Office.context.roamingSettings.get('civicrm_url');
+      config.url = (Office.context.roamingSettings.get('civicrm_url') || '').replace(/\/+$/, '');
       config.sitekey = Office.context.roamingSettings.get('civicrm_sitekey');
       config.apikey = Office.context.roamingSettings.get('civicrm_apikey');
       if (config.url && config.apikey && config.sitekey) {
