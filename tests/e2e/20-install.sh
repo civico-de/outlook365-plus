@@ -35,8 +35,8 @@ for page in taskpane.html readtaskpane.html; do
     "$([ "$code" = "200" ] && grep -q 'assets/civicrm.js' "$OUT_DIR/page_$page.body" && echo 0 || echo 1)" \
     "http=$code $(head -c 200 "$OUT_DIR/page_$page.body")"
   check "civicrm/outlook365/$page carries no unrendered Smarty" \
-    "$(grep -qE '\{(ts|literal|crmScope|\$)' "$OUT_DIR/page_$page.body" && echo 1 || echo 0)" \
-    "$(grep -oE '\{(ts|literal|crmScope|\$)[^}]*\}' "$OUT_DIR/page_$page.body" | head -3)"
+    "$(body_lacks "page_$page" '\{(ts|literal|crmScope|\$)' && echo 0 || echo 1)" \
+    "$(grep -oE '\{(ts|literal|crmScope|\$)[^}]*\}' "$OUT_DIR/page_$page.body" 2>/dev/null | head -3)"
 done
 
 # The data processors the add-in ships back its Outlook365* APIv3 entities.

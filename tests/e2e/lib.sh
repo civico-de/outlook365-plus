@@ -55,6 +55,7 @@ site_key() {
 # curl's stdin config, so it appears in no process list.
 hit() {
   local label="$1" url="$2"; shift 2
+  rm -f "$OUT_DIR/$label.body"
   {
     printf 'url = "%s"\n' "$url"
     printf 'output = "%s"\n' "$OUT_DIR/$label.body"
@@ -62,6 +63,14 @@ hit() {
     printf 'silent\ngloboff\n'
     printf '%s\n' "$@"
   } | curl -K -
+}
+
+# body_lacks <label> <extended-regex> — 0 when the body exists, is non-empty
+# and does not match. A missing body fails instead of passing silently.
+body_lacks() {
+  local f="$OUT_DIR/$1.body"
+  [ -s "$f" ] || return 1
+  ! grep -qE "$2" "$f"
 }
 
 auth_header() { # auth_header [header-name] — a curl config line carrying the token

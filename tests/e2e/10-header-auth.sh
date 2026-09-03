@@ -87,8 +87,8 @@ check "a token in the POST body is refused" \
   "http=$code $(head -c 200 "$OUT_DIR/v3_body_token.body")"
 
 # ── the site key the fork stopped sending ────────────────────────────────
-check "no request in this suite carried the site key" \
-  "$(grep -rqs "$KEY" "$OUT_DIR"/v3_header.body "$OUT_DIR"/v4_header.body && echo 1 || echo 0)"
+check "no successful response echoed the site key" \
+  "$(body_lacks v3_header "$KEY" && body_lacks v4_header "$KEY" && echo 0 || echo 1)"
 code="$(addin_api3 v3_with_site_key Contact get "$V3_CONTACTS" "$(auth_header)" \
   "$(printf 'header = "X-Civi-Key: %s"' "$KEY")")"
 check "sending the site key as well changes nothing" \
