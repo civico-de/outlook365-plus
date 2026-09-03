@@ -71,9 +71,12 @@ the same shapes with curl.
 
 The write is attributed to the token's contact:
 `civicrm_activity_contact.record_type_id = 2` holds the subject's contact id.
-APIv4 `Activity.create` needs an explicit `source_contact_id` — it derives
-nothing from the session — which is why `assets/readtaskpane.js` keeps passing
-`user_contact_id`.
+
+`assets/readtaskpane.js` passes the literal `"user_contact_id"` as
+`source_contact_id`, which APIv4 resolves — measured: a token-authenticated
+`Activity.create` with that value stored the subject's contact id, not 0.
+`source_contact_id` must still be *present*; APIv4 refuses the create when it
+is omitted altogether.
 
 Reads go over POST because one transport serves both; the legacy endpoint
 accepts POST for reads and *requires* it for writes
