@@ -21,9 +21,8 @@ This extension is licensed under [AGPL-3.0](LICENSE.txt).
 ## This is a fork
 
 This fork is <https://github.com/civico-de/outlook365>. Upstream is
-<https://lab.civicrm.org/extensions/outlook365>, tracked on branch `master`;
-the fork's work lives on `civico`. The upstream remote is named `upstream`, so
-`git log upstream/master..civico` is exactly the delta.
+<https://lab.civicrm.org/extensions/outlook365>, kept as the remote `upstream`,
+so `git log upstream/master..main` is exactly the delta.
 
 The fork exists because the add-in authenticates with a keyring token, and
 keyring refuses any token that appears in a URL or a request parameter.
@@ -49,7 +48,7 @@ panes — is upstream's, unchanged.
 
 ```bash
 git fetch upstream
-git rebase upstream/master        # on branch civico
+git rebase upstream/master
 bash tests/e2e/run.sh             # against a running .docker stack
 ```
 
