@@ -3,6 +3,7 @@ version: 1
 policy:
   license: AGPL-3.0
   copyright: 'civico GmbH'
+  renovate_preset: github>civico-de/renovate
 
   # api4-self-entity reads CamelCase first arguments out of every tracked
   # .js — including upstream's minified URI.js, where `("RegExp")` reads as an
