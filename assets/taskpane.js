@@ -13,6 +13,12 @@
 
     var fields = [];
 
+    // The site URL identifies the site a token belongs to, so both sides of
+    // that comparison have to be spelled the same way.
+    function normalizeUrl(url) {
+      return String(url || '').replace(/\/+$/, '');
+    }
+
     jQuery(document).ready(function () {
       // Set localized text for UI elements.
       $("#loadingContacts .ms-Spinner-label").text(UIText.Loading);
@@ -558,7 +564,11 @@
         var settingsDialog = result.value;
         settingsDialog.addEventHandler(Microsoft.Office.WebExtension.EventType.DialogMessageReceived, function (message) {
           var settings = JSON.parse(message.message);
-          config = {url: settings.url, token: settings.token || (previous ? previous.token : '')};
+          var sameSite = previous && normalizeUrl(settings.url) === previous.url;
+          config = {
+            url: normalizeUrl(settings.url),
+            token: settings.token || (sameSite ? previous.token : '')
+          };
           setConfig(config, function (result) {
             settingsDialog.close();
             settingsDialog = null;
@@ -581,7 +591,7 @@
     function getConfig() {
       var config = {};
 
-      config.url = (Office.context.roamingSettings.get('civicrm_url') || '').replace(/\/+$/, '');
+      config.url = normalizeUrl(Office.context.roamingSettings.get('civicrm_url'));
       config.token = Office.context.roamingSettings.get('civicrm_token');
       if (config.url && config.token) {
         return config;

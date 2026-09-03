@@ -10,6 +10,12 @@
     var myLanguage = Office.context.displayLanguage;
     var UIText = UIStrings.getLocaleStrings(myLanguage);
 
+    // The site URL identifies the site a token belongs to, so both sides of
+    // that comparison have to be spelled the same way.
+    function normalizeUrl(url) {
+      return String(url || '').replace(/\/+$/, '');
+    }
+
     jQuery(document).ready(async function () {
       // Set localized text for UI elements.
       await reset();
@@ -219,7 +225,11 @@
         var settingsDialog = result.value;
         settingsDialog.addEventHandler(Microsoft.Office.WebExtension.EventType.DialogMessageReceived, async function (message) {
           var settings = JSON.parse(message.message);
-          config = {url: settings.url, token: settings.token || (previous ? previous.token : '')};
+          var sameSite = previous && normalizeUrl(settings.url) === previous.url;
+          config = {
+            url: normalizeUrl(settings.url),
+            token: settings.token || (sameSite ? previous.token : '')
+          };
           await setConfig(config, function (result) {
             settingsDialog.close();
             settingsDialog = null;
@@ -570,7 +580,7 @@
     async function getConfig() {
       var config = {};
 
-      config.url = (Office.context.roamingSettings.get('civicrm_url') || '').replace(/\/+$/, '');
+      config.url = normalizeUrl(Office.context.roamingSettings.get('civicrm_url'));
       config.token = Office.context.roamingSettings.get('civicrm_token');
       if (config.url && config.token) {
         return config;
