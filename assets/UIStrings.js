@@ -32,6 +32,7 @@ var UIStrings = (function () {
       "URL": "CiviCRM Site URL",
       "URL_Placeholder": "E.g. https://your-site",
       "Token": "CiviCRM API token (keyring)",
+      "TokenKeep": "Leave blank to keep the stored token",
       "ContactType": "Contact Type",
       "Done": "Save"
     },

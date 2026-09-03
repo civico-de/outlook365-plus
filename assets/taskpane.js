@@ -541,13 +541,15 @@
      * Function to open the settings dialog.
      */
     function openSettingsDialog() {
-      // Display settings dialog.
+      // Only non-secret values reach the dialog URL. A token in a query string
+      // lands in the web server's access log and the browser history.
+      var previous = config;
       var url = settingsDialogUrl;
-      // Pass along existing values, or at least the site's base URL (known
-      // from the server), so the dialog doesn't ask the user to guess it.
-      var prefill = config || (crmBaseUrl ? {url: crmBaseUrl, token: ''} : null);
+      var prefill = previous
+        ? {url: previous.url, hasToken: !!previous.token}
+        : (crmBaseUrl ? {url: crmBaseUrl, hasToken: false} : null);
       if (prefill) {
-        url = url + '?config=' + JSON.stringify(prefill);
+        url = url + '?config=' + encodeURIComponent(JSON.stringify(prefill));
       }
 
       var dialogOptions = {width: 30, height: 40, displayInIframe: true};
@@ -555,7 +557,8 @@
       Office.context.ui.displayDialogAsync(url, dialogOptions, function (result) {
         var settingsDialog = result.value;
         settingsDialog.addEventHandler(Microsoft.Office.WebExtension.EventType.DialogMessageReceived, function (message) {
-          config = JSON.parse(message.message);
+          var settings = JSON.parse(message.message);
+          config = {url: settings.url, token: settings.token || (previous ? previous.token : '')};
           setConfig(config, function (result) {
             settingsDialog.close();
             settingsDialog = null;

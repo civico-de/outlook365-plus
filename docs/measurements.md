@@ -165,6 +165,21 @@ the task pane is served by the CiviCRM site it talks to, and the settings
 dialog is prefilled with that site's own base URL. The site URL field must be
 that same origin.
 
+## Not covered by the suite: the settings dialog
+
+The task pane opens `outlook365/settings/dialog.html` through
+`Office.context.ui.displayDialogAsync`, and upstream passed the stored
+configuration to it in that URL's query string — which for this fork would put
+the token straight into the CiviCRM host's access log, defeating everything
+above. The dialog now receives `{url, hasToken}` and never the token itself; an
+empty token field means "keep the stored one".
+
+There is **no automated check** for this: the repository has no JavaScript test
+runner, the code path only runs inside an Office host, and adding a runner for
+one assertion is not worth the build step. The invariant to re-check by hand
+when touching `openSettingsDialog` in either task pane: nothing secret may be
+concatenated into `settingsDialogUrl`.
+
 ## What was not measured
 
 - Behaviour inside a real Outlook client. Everything here is curl against the

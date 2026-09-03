@@ -1,6 +1,10 @@
 (function () {
   'use strict';
 
+  // The token itself never reaches this dialog, only whether one is stored,
+  // so an empty field means "keep the stored token".
+  var hasToken = false;
+
   // The Office initialize function must be run each time a new page is loaded.
   Office.initialize = function (reason) {
 
@@ -26,7 +30,10 @@
         $('.not-configured-warning').show();
       } else {
         $('#civicrm-url').val(config.url);
-        $('#civicrm-token').val(config.token);
+        hasToken = !!config.hasToken;
+        if (hasToken) {
+          $('#civicrm-token').attr('placeholder', UIText.SettingsScreen.TokenKeep);
+        }
       }
 
       change();
@@ -47,7 +54,7 @@
 
   function change() {
     var settings = readSettings();
-    $('#settings-done').prop('disabled', !(settings.url && settings.token));
+    $('#settings-done').prop('disabled', !(settings.url && (settings.token || hasToken)));
   }
 
   function done() {
