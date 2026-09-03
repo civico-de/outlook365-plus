@@ -38,6 +38,7 @@ services:
     volumes:
       - ..:/var/www/html/ext/outlook365
       - ../../keyring:/var/www/html/ext/keyring:ro
+      # Same expression as fetch-ext.sh's DEST; keep the two in step.
       - ${OUTLOOK365_EXT_DIR:-${HOME}/.cache/outlook365-ext}/dataprocessor:/var/www/html/ext/dataprocessor:ro
       - ./init.d:/civikitchen-init.d:ro
 

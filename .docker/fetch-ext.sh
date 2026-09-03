@@ -5,7 +5,8 @@
 # docker-compose.yml.
 set -euo pipefail
 
-DEST="${OUTLOOK365_EXT_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/outlook365-ext}"
+# docker-compose.yml mounts this exact expression; keep the two in step.
+DEST="${OUTLOOK365_EXT_DIR:-$HOME/.cache/outlook365-ext}"
 mkdir -p "$DEST"
 
 clone() { # clone <dir> <url>
