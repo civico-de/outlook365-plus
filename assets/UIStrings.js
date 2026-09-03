@@ -28,11 +28,10 @@ var UIStrings = (function () {
     },
     "SettingsScreen": {
       "Title": "Settings",
-      "NotConfigured": "Please enter the base URL of your CiviCRM site and your Site key and API key.<br>If you don't know what this is ask your administrator of CiviCRM.",
+      "NotConfigured": "Please enter the base URL of your CiviCRM site and your keyring API token.<br>If you don't know what this is ask your administrator of CiviCRM.",
       "URL": "CiviCRM Site URL",
       "URL_Placeholder": "E.g. https://your-site",
-      "SiteKey": "CiviCRM Site Key",
-      "ApiKey": "CiviCRM API Key",
+      "Token": "CiviCRM API token (keyring)",
       "ContactType": "Contact Type",
       "Done": "Save"
     },
@@ -68,8 +67,6 @@ var UIStrings = (function () {
       "NotConfigured": "Geef de URL van de REST interface van je CiviCRM en je sitekey en API key..<br>Mocht je niet weten wat dit is vraag dan de beheerder van je CiviCRM voor deze gegevens.",
       "URL": "URL naar je CiviCRM REST interface",
       "URL_Placeholder": "Bijv. https://your-site",
-      "SiteKey": "Site key",
-      "ApiKey": "Api Key",
       "Done": "Opslaan"
     }
   };
@@ -100,8 +97,6 @@ var UIStrings = (function () {
       "NotConfigured": "Introduzca la URL del punto final REST de su CiviCRM y su clave de sitio y clave de API.<br>Si no sabe qué es, pregunte a su administrador de CiviCRM.",
       "URL": "CiviCRM REST URL",
       "URL_Placeholder": "Por ejemplo: https://your-site",
-      "SiteKey": "Clave del sitio de CiviCRM",
-      "ApiKey": "Clave de la API CiviCRM",
       "ContactType": "Tipo de contacto",
       "Done": "Guardar"
     },
@@ -148,8 +143,6 @@ var UIStrings = (function () {
       "NotConfigured": "Introduïu l'URL del punt final REST del vostre CiviCRM i la vostra clau de lloc i clau d'API.<br>Si no sabeu què és, pregunteu al vostre administrador de CiviCRM.",
       "URL": "CiviCRM REST URL",
       "URL_Placeholder": "Per exemple: https://your-site",
-      "SiteKey": "Clau del lloc de CiviCRM",
-      "ApiKey": "Clau de l'API CiviCRM",
       "ContactType": "Tipus de contacte",
       "Done": "Desa"
     },
@@ -195,8 +188,6 @@ var UIStrings = (function () {
       "NotConfigured": "Veuillez entrer l'URL REST de CiviCRM et vos clés 'Site key' et 'API key'.<br>Au besoin, demandez à votre administrateur CiviCRM.",
       "URL": "CiviCRM URL REST",
       "URL_Placeholder": "ex: https://votre-site",
-      "SiteKey": "'Site Key' de CiviCRM",
-      "ApiKey": "'API Key' de CiviCRM",
       "ContactType": "Type de contact",
       "Done": "Enregistrer"
     },

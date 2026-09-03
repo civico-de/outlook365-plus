@@ -12,15 +12,13 @@
       $('h1.title').text(UIText.SettingsScreen.Title);
       $('.not-configured-warning .ms-MessageBar-text').html(UIText.SettingsScreen.NotConfigured);
       $('.ms-Label.url').text(UIText.SettingsScreen.URL);
-      $('.ms-Label.sitekey').text(UIText.SettingsScreen.SiteKey);
-      $('.ms-Label.apikey').text(UIText.SettingsScreen.ApiKey);
+      $('.ms-Label.token').text(UIText.SettingsScreen.Token);
       $('#settings-done .ms-Button-label').text(UIText.SettingsScreen.Done);
       $('#civicrm-url').attr("placeholder", UIText.SettingsScreen.URL_Placeholder);
 
 
       $('#civicrm-url').change(change);
-      $('#site-key').change(change);
-      $('#api-key').change(change);
+      $('#civicrm-token').change(change);
 
       // Check if warning should be displayed.
       var config = JSON.parse(getParameterByName('config'));
@@ -28,8 +26,7 @@
         $('.not-configured-warning').show();
       } else {
         $('#civicrm-url').val(config.url);
-        $('#site-key').val(config.sitekey);
-        $('#api-key').val(config.apikey);
+        $('#civicrm-token').val(config.token);
       }
 
       change();
@@ -41,24 +38,20 @@
     });
   };
 
+  function readSettings() {
+    return {
+      url: $('#civicrm-url').val(),
+      token: $('#civicrm-token').val()
+    };
+  }
+
   function change() {
-    var settings = {};
-    settings.url = $('#civicrm-url').val();
-    settings.sitekey = $('#site-key').val();
-    settings.apikey = $('#api-key').val();
-    if (settings.url && settings.sitekey && settings.apikey) {
-      $('#settings-done').prop('disabled', false);
-    } else {
-      $('#settings-done').prop('disabled', true);
-    }
+    var settings = readSettings();
+    $('#settings-done').prop('disabled', !(settings.url && settings.token));
   }
 
   function done() {
-    var settings = {};
-    settings.url = $('#civicrm-url').val();
-    settings.sitekey = $('#site-key').val();
-    settings.apikey = $('#api-key').val();
-    Office.context.ui.messageParent(JSON.stringify(settings));
+    Office.context.ui.messageParent(JSON.stringify(readSettings()));
   }
 
   function getParameterByName(name, url) {
