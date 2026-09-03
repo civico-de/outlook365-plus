@@ -7,7 +7,8 @@ This page explains how to set up CiviCRM and Outlook 365 integration.
 First, download and enable the extension dependencies:
 
 * Data Processor, https://civicrm.org/extensions/data-processor
-* API Key, https://civicrm.org/extensions/api-key
+* authx, shipped with CiviCRM core
+* keyring, which issues the API tokens the Add-in authenticates with
 
 Then enable the **Outlook 365 Integration** extension
 
@@ -16,31 +17,42 @@ After enabling the dependencies and this extension, install the two required Dat
 * Outlook 365 Contacts
 * Outlook 365 Groups
 
-## Obtain the CiviCRM REST URL, CiviCRM Site Key and CiviCRM API Key
+## Obtain the CiviCRM Site URL and an API token
 
-### CiviCRM REST URL
+### CiviCRM Site URL
 
-The CiviCRM REST URL is (typically), https://your.domain.name/civicrm/ajax/rest
+The base URL of the CiviCRM site, for example https://your.domain.name — not a
+path below it. It must be the same origin that serves the Add-in's task pane,
+because the token travels in a request header and a cross-origin call would
+need a CORS preflight CiviCRM does not answer.
 
-For more information see [APIv3 REST, End-Point URL](https://docs.civicrm.org/dev/en/latest/api/v3/rest/#end-point-url)
+### CiviCRM API token
 
-### CiviCRM Site Key
+Each user of the Outlook integration needs one keyring token on their CiviCRM
+Contact, issued on the contact's **API tokens** tab. The plaintext is shown
+once, at issue; a lost token is replaced, never recovered.
 
-The CiviCRM Site Key is **unique** for each CiviCRM site. To obtain this information, see https://docs.civicrm.org/sysadmin/en/latest/setup/secret-keys/
+The contact also needs the **authenticate with api key** permission, on top of
+whatever the token's own scope allows. The Add-in sends no site key, so that
+permission is what satisfies authx's guard.
 
-### CiviCRM API Key
+## Provide the Site URL and the token to the end user
 
-Each user that will be using the Outlook integration will need to have a CiviCRM API Key generated for their CiviCRM Contact. Locate each Contact, click on the API Key tab and click the Add Key API button. (If you have many users, then you will probably want to find a faster way to do this, because life is short!). Each user can also login to CiviCRM and generate their own API Key for their CiviCRM Contact.  
+Give each user their own token over a channel that does not log it. A token is
+a credential for that one person: every action the Add-in performs is
+attributed to them, and the token can be revoked on its own.
 
-## Provide the CiviCRM REST URL, Site Key and API Key to the end user
+## CiviCRM Permissions
 
-Provide the CiviCRM REST URL, CiviCRM Site Key and CiviCRM API Key to each user, as this is required for setting up their Outlook integration. Ensure each user receives the correct CiviCRM API Key.
+Outlook loads the task pane with no CiviCRM session, so the **Access Outlook
+365 pages** permission has to reach anonymous visitors.
 
-## CiviCRM Permissions 
+For **Standalone**, add it to the **Everyone, including anonymous users** role.
 
-For **WordPress**, enable the **Access Outlook 365 pages** permission to **Anonymous User**.
+For **WordPress**, enable it for **Anonymous User**.
 
-For **Drupal**, enable the **Access Outlook 365 pages** permission to both **Anonymous User** and **Authenticated User** roles.
+For **Drupal**, enable it for both **Anonymous User** and **Authenticated
+User** roles.
 
 ## Outlook 365 Manifest file (manifest.xml)
 
@@ -83,18 +95,17 @@ The Add-in will now be available in this users Outlook 365. See the *First use c
 ## First use configuration
 
 The Add-in must be configured for *each user* with the following settings:
-* CiviCRM REST URL
-* Site Key
-* API Key
+* CiviCRM Site URL
+* CiviCRM API token
 
-See the *Obtain the CiviCRM REST URL, Site Key and API Key* section above for more details.
+See the *Obtain the CiviCRM Site URL and an API token* section above for more details.
 
 1. Login into Outlook 365
 2. **Open an email** or click on **New message**
 3. On the **email page** click on the **...** action button
 4. Click on icon with the **CiviCRM logo**, your Organisation name should be shown next to this icon
 5. The **Add-in pane** will open. Click on the Settings in the **Add-in pane** 
-6. Enter the following details: CiviCRM REST URL, CiviCRM Site Key, CiviCRM API Key
+6. Enter the following details: CiviCRM Site URL, CiviCRM API token
 6. Click **Save**
 
 If the details have been entered correctly, then the Add-in should now be ready to use.
