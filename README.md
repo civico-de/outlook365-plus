@@ -89,6 +89,9 @@ cd .docker && docker compose up -d      # CiviCRM on http://localhost:8200 (admi
 bash tests/e2e/run.sh                   # from the host, against that stack
 ```
 
+The suite needs `curl`, `python3` and `node` on the host; `tests/e2e/40-uistrings.sh`
+resolves `assets/UIStrings.js` with node and runs without the stack.
+
 The compose project is named `outlook365` and mounts this checkout, the sibling
 `keyring` checkout and the cached `dataprocessor` clone.
 `docker compose down -v && docker compose up -d` re-runs provisioning from

@@ -65,8 +65,6 @@ var UIStrings = (function () {
     "NotConfigured": "Deze Add is nog niet geconfigureerd. Klik op de <strong>Instellingen</strong> knop onderaan dit scherm.",
     "SettingsScreen": {
       "Title": "Instelling",
-      "NotConfigured": "Geef de URL van de REST interface van je CiviCRM en je sitekey en API key..<br>Mocht je niet weten wat dit is vraag dan de beheerder van je CiviCRM voor deze gegevens.",
-      "URL": "URL naar je CiviCRM REST interface",
       "URL_Placeholder": "Bijv. https://your-site",
       "Done": "Opslaan"
     }
@@ -95,8 +93,6 @@ var UIStrings = (function () {
     },
     "SettingsScreen": {
       "Title": "Ajustes",
-      "NotConfigured": "Introduzca la URL del punto final REST de su CiviCRM y su clave de sitio y clave de API.<br>Si no sabe qué es, pregunte a su administrador de CiviCRM.",
-      "URL": "CiviCRM REST URL",
       "URL_Placeholder": "Por ejemplo: https://your-site",
       "ContactType": "Tipo de contacto",
       "Done": "Guardar"
@@ -141,8 +137,6 @@ var UIStrings = (function () {
     },
     "SettingsScreen": {
       "Title": "Configuració",
-      "NotConfigured": "Introduïu l'URL del punt final REST del vostre CiviCRM i la vostra clau de lloc i clau d'API.<br>Si no sabeu què és, pregunteu al vostre administrador de CiviCRM.",
-      "URL": "CiviCRM REST URL",
       "URL_Placeholder": "Per exemple: https://your-site",
       "ContactType": "Tipus de contacte",
       "Done": "Desa"
@@ -186,8 +180,6 @@ var UIStrings = (function () {
     },
     "SettingsScreen": {
       "Title": "Paramètres",
-      "NotConfigured": "Veuillez entrer l'URL REST de CiviCRM et vos clés 'Site key' et 'API key'.<br>Au besoin, demandez à votre administrateur CiviCRM.",
-      "URL": "CiviCRM URL REST",
       "URL_Placeholder": "ex: https://votre-site",
       "ContactType": "Type de contact",
       "Done": "Enregistrer"
