@@ -34,9 +34,10 @@ The delta, in full:
 | --- | --- |
 | One shared transport that sets `X-Civi-Auth: Bearer <token>`; every call routed through it | `assets/civicrm.js`, `assets/taskpane.js`, `assets/readtaskpane.js`, `outlook365/settings/saveContactInGroup.js` |
 | The credential removed from every URL and body | as above |
+| The settings dialog is told *whether* a token is stored, never the token — upstream passed it in the dialog's own query string | `assets/taskpane.js`, `assets/readtaskpane.js`, `outlook365/settings/dialog.js` |
 | The site key dropped entirely — field, storage and request | `outlook365/settings/dialog.*`, `assets/UIStrings.js` |
 | The settings field renamed to an API token, and stored as `civicrm_token` | `outlook365/settings/dialog.*`, `assets/UIStrings.js` |
-| `com.cividesk.apikey` dropped from `<requires>`; fork metadata and `<ver>6.17` | `info.xml` |
+| `com.cividesk.apikey` dropped from `<requires>`, `keyring` added; fork metadata and `<ver>6.17` | `info.xml` |
 | A dev stack and an e2e suite proving the above | `.docker/`, `tests/e2e/` |
 | The inherited civix-upgrade workflow removed — it fires on every push, calls a third-party reusable workflow and names an extension key this repository does not use | `.github/` |
 

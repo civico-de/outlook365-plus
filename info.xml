@@ -28,6 +28,7 @@
   </civix>
   <requires>
     <ext>dataprocessor</ext>
+    <ext>keyring</ext>
   </requires>
   <classloader>
     <psr4 prefix="Civi\" path="Civi"/>
