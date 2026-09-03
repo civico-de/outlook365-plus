@@ -9,9 +9,8 @@
     <email>hi@jfilter.de</email>
   </maintainer>
   <urls>
-    <!-- FIXME: both placeholders need the fork repository URL. -->
-    <url desc="Main Extension Page">https://example.org/REPLACE-WITH-FORK-REPO-URL</url>
-    <url desc="Documentation">https://example.org/REPLACE-WITH-FORK-REPO-URL/blob/civico/README.md</url>
+    <url desc="Main Extension Page">https://github.com/civico-de/outlook365</url>
+    <url desc="Documentation">https://github.com/civico-de/outlook365/blob/civico/README.md</url>
     <url desc="Upstream">https://lab.civicrm.org/extensions/outlook365</url>
     <url desc="Licensing">http://www.gnu.org/licenses/agpl-3.0.html</url>
   </urls>

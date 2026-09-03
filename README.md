@@ -20,9 +20,10 @@ This extension is licensed under [AGPL-3.0](LICENSE.txt).
 
 ## This is a fork
 
-Upstream is <https://lab.civicrm.org/extensions/outlook365>, tracked on branch
-`master`; the fork's work lives on `civico`. The upstream remote is named
-`upstream`, so `git log upstream/master..civico` is exactly the delta.
+This fork is <https://github.com/civico-de/outlook365>. Upstream is
+<https://lab.civicrm.org/extensions/outlook365>, tracked on branch `master`;
+the fork's work lives on `civico`. The upstream remote is named `upstream`, so
+`git log upstream/master..civico` is exactly the delta.
 
 The fork exists because the add-in authenticates with a keyring token, and
 keyring refuses any token that appears in a URL or a request parameter.
@@ -78,7 +79,7 @@ Per user:
   need a CORS preflight that CiviCRM does not answer.
 
 Deriving a token's scope from real traffic is keyring's job — see its
-operations guide on report mode.
+operations guide on report mode in <https://github.com/civico-de/keyring>.
 
 ## Development
 
@@ -110,7 +111,7 @@ scratch.
 * CiviCRM 6.17 or newer (measured on 6.17.3)
 * PHP 8.4 (measured on 8.4.25)
 * Data Processor 1.1.0 or newer
-* keyring
+* [keyring](https://github.com/civico-de/keyring)
 * Microsoft Office 365
 
 ## About the Authors
