@@ -23,7 +23,7 @@
   <comments>Funded by MAKOA. Developed and supported by CiviCoop and Agileware. Forked by civico GmbH: the credential travels in the X-Civi-Auth header.</comments>
   <civix>
     <namespace>CRM/Outlook365</namespace>
-    <format>25.01.1</format>
+    <format>25.10.2</format>
   </civix>
   <requires>
     <ext>dataprocessor</ext>
@@ -35,7 +35,8 @@
   </classloader>
   <mixins>
     <mixin>menu-xml@1.0.0</mixin>
-    <mixin>smarty-v2@1.0.3</mixin>
+    <mixin>scan-classes@1.0.0</mixin>
+    <mixin>smarty@1.0.3</mixin>
   </mixins>
   <upgrader>CiviMix\Schema\Outlook365\AutomaticUpgrader</upgrader>
 </extension>
