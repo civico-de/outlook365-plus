@@ -1,0 +1,9 @@
+# The JavaScript this fork does not own, mirroring policy.vendored_paths in
+# civikitchen.yaml — ckeslint applies its own fixed ignore list, not that key.
+assets/taskpane.js
+assets/readtaskpane.js
+assets/UIStrings.js
+outlook365/settings/confirm.js
+outlook365/settings/dialog.js
+outlook365/settings/saveContact.js
+outlook365/settings/saveContactInGroup.js

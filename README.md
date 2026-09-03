@@ -97,6 +97,23 @@ The compose project is named `outlook365` and mounts this checkout, the sibling
 `docker compose down -v && docker compose up -d` re-runs provisioning from
 scratch.
 
+### CI
+
+Every push and pull request against `main` runs, against a fresh civikitchen
+stack:
+
+```bash
+cklint --all && ckconform && ckcivix --check && ckfmt --check && ckeslint
+phpstan analyse && ckcompat && ckdeps && cktaint && cksmarty
+bash tests/e2e/run.sh
+```
+
+plus `ckinit --check` for template drift and a disable/enable/uninstall/install
+pass (`lifecycle: true`). The e2e job mounts `keyring` from a private checkout
+and boots the CI stack with port 8200 published; `dataprocessor` resolves
+through the pinned archive in `civikitchen.yaml` (`policy.extension_sources`),
+same as the `ci` job's own stack.
+
 ## Documentation
 
 | Document | What it covers |

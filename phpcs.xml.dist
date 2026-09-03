@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<ruleset name="outlook365">
+  <description>Project layer over the bundled CiviKitchen standard.</description>
+
+  <rule ref="CiviKitchen"/>
+
+  <!-- The PHP this fork owns. Every other PHP file here is upstream's and is
+       listed in civikitchen.yaml policy.vendored_paths; cklint's own ignore
+       patterns are directory-shaped and do not reach a single file. -->
+  <file>tests/e2e/seed.php</file>
+  <arg name="extensions" value="php"/>
+
+  <exclude-pattern>*/vendor/*</exclude-pattern>
+  <exclude-pattern>*/node_modules/*</exclude-pattern>
+</ruleset>

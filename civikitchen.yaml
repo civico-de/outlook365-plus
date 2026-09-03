@@ -1,0 +1,90 @@
+$schema: https://raw.githubusercontent.com/jfilter/civikitchen/main/packages/civikitchen-scenario-schema/scenario.schema.json
+version: 1
+policy:
+  license: AGPL-3.0
+  copyright: 'civico GmbH'
+
+  # api4-self-entity reads CamelCase first arguments out of every tracked
+  # .js — including upstream's minified URI.js, where `("RegExp")` reads as an
+  # entity name. This fork's own JavaScript takes the entity as a parameter
+  # and never names one in a literal, so the check has nothing here to answer.
+  ignore_checks:
+    checks:
+      - api4-self-entity
+    reason: Its only input here is upstream's minified URI.js bundle, where a CamelCase literal is not an entity name
+
+  # Every PHP file in this repository is upstream's; the fork's delta is
+  # JavaScript. Inventing PHPUnit tests over upstream boilerplate would
+  # manufacture a coverage number that says nothing. tests/e2e is the suite
+  # that asserts what this fork changed, and CI runs it.
+  tests:
+    mode: optional
+    reason: The fork owns no PHP; its delta is JavaScript and is covered by tests/e2e
+
+  # The add-in is loaded by Outlook from URLs CiviCRM serves out of this
+  # directory, so these files have to exist as files. They arrive with
+  # upstream and are not repackaged here.
+  bundles:
+    mode: committed
+    reason: jQuery, URI.js and Fabric ship verbatim from upstream and are served to the Outlook task pane from the extension directory
+
+  # Upstream is <https://lab.civicrm.org/extensions/outlook365> at 2.2.7,
+  # tracked as the remote `upstream`. Two groups:
+  #
+  #   * trees the fork never touches — linting them grades upstream;
+  #   * five JavaScript files carrying the fork's whole diff (141 added lines
+  #     in 1641). ckfmt rewrites 934 lines of them, and upstream still moves:
+  #     its last release touched four of the five. Reformatting would turn
+  #     every rebase into a full-file merge and buy no check the e2e suite
+  #     does not already make. assets/civicrm.js — the transport the fork
+  #     wrote — stays in scope, as does everything under tests/ and .docker/.
+  vendored_paths:
+    - path: CRM
+      reason: Unmodified upstream outlook365 2.2.7
+    - path: Civi
+      reason: Unmodified upstream outlook365 2.2.7
+    - path: mixin
+      reason: Unmodified upstream outlook365 2.2.7 (civix-generated mixin library)
+    - path: outlook365.php
+      reason: Unmodified upstream outlook365 2.2.7
+    - path: outlook365/settings/confirm.js
+      reason: Unmodified upstream outlook365 2.2.7
+    - path: outlook365/settings/saveContact.js
+      reason: Unmodified upstream outlook365 2.2.7
+    - path: assets/taskpane.js
+      reason: Upstream outlook365 2.2.7 with a narrow fork diff; reformatting it would break the rebase the README describes
+    - path: assets/readtaskpane.js
+      reason: Upstream outlook365 2.2.7 with a narrow fork diff; reformatting it would break the rebase the README describes
+    - path: assets/UIStrings.js
+      reason: Upstream outlook365 2.2.7 with a narrow fork diff; reformatting it would break the rebase the README describes
+    - path: outlook365/settings/dialog.js
+      reason: Upstream outlook365 2.2.7 with a narrow fork diff; reformatting it would break the rebase the README describes
+    - path: outlook365/settings/saveContactInGroup.js
+      reason: Upstream outlook365 2.2.7 with a narrow fork diff; reformatting it would break the rebase the README describes
+
+  # tests/e2e/lib.sh: this suite has its own helpers — token minting and
+  # curl-reading-its-config-from-stdin, no maildev.
+  # The phpunit files: there is no PHP suite here, see policy.tests.
+  template_custom:
+    paths:
+      - tests/e2e/lib.sh
+      - phpunit.xml.dist
+      - tests/phpunit/bootstrap.php
+      - tests/phpunit/ckHeadless.php
+    reason: An e2e suite with its own helpers, and no PHP test suite to bootstrap
+
+  # dataprocessor IS on the public registry, but measured on a clean boot:
+  # civikitchen downloads it, enables it, and immediately enables outlook365
+  # in the same pass — and outlook365's own postInstall then queries a
+  # dataprocessor table that is not yet visible, failing the whole boot
+  # (reproduced twice, 2/2, with a fresh `docker compose up`). The
+  # digest-pinned archive path does not race the same way — it refreshes the
+  # extension container itself right after extracting. Re-cut this pin from
+  # `git rev-parse HEAD` on a `dataprocessor` checkout when it goes stale;
+  # the sha256 is what makes it safe to move.
+  extension_sources:
+    - key: dataprocessor
+      version: '1.156-dev'
+      url: https://lab.civicrm.org/extensions/dataprocessor/-/archive/74725240768d1081fc68715ccc52ccacc903fd51/dataprocessor-74725240768d1081fc68715ccc52ccacc903fd51.zip
+      sha256: 74e5d63d0c839f5c5fdd074f6f32b47dc7c8fb43a3288776a26b9ae7c2e981ae
+      reason: The registry download races outlook365's own postInstall on a clean boot (measured, 2/2); the digest-pinned path refreshes the extension container and does not

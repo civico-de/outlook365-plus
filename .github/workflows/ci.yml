@@ -1,0 +1,151 @@
+# Thin caller: the actual pipeline lives in civikitchen's reusable
+# extension-ci.yml (compose stack → cklint + ckconform → phpunit under
+# ckcoverage → phpstan → template-drift check), so it is defined once instead
+# of drifting between copy-pasted workflows. civikitchen is public — no
+# cross-repo token needed.
+#
+# Repo-specific needs (a different compose file, a different image, skipping
+# the drift check) go through the workflow's inputs (`with:`), not a fork of
+# its steps.
+#
+# The @v1 pin is the versioned contract: workflow, template, ck* tools and
+# images are released together, so this ref and the image tag in
+# .docker/docker-compose.ci.yml move as one. Fixes arrive without a PR here;
+# a breaking change has to announce itself as @v2. See civikitchen's
+# docs/releases.md.
+#
+# Everything up to the END marker is template-managed; what this repo needs
+# beyond it — `with:` inputs for the call, further jobs — goes below the
+# marker and survives `ckinit --update`.
+# BEGIN CIVIKITCHEN MANAGED caller
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# The jobs only read the repo; do not inherit the org default token.
+permissions:
+  contents: read
+
+# No inputs: the workflow reads the extension key from info.xml itself.
+jobs:
+  ci:
+    uses: jfilter/civikitchen/.github/workflows/extension-ci.yml@v1
+# END CIVIKITCHEN MANAGED caller
+    # keyring is not on the public extension registry — it is civico's own,
+    # mounted as the one private sibling the workflow supports. dataprocessor
+    # IS on the registry; its pinned archive (civikitchen.yaml
+    # policy.extension_sources) works around a measured install-order race,
+    # not an availability gap, so it needs no wiring here.
+    with:
+      lifecycle: true
+      sibling_repo: civico-de/keyring
+      composer_app_repositories: keyring
+    secrets:
+      composer_app_id: ${{ vars.CIVICO_APP_ID }}
+      composer_app_private_key: ${{ secrets.CIVICO_APP_KEY }}
+
+  # The e2e suite is this fork's only test asset (policy.tests: optional —
+  # it owns no PHP), so unlike a repo with a headless PHPUnit suite, it has
+  # to run in CI itself or nothing here actually verifies the fork's own
+  # code. Not civikitchen's own `playwright` input: that suite is bash+curl
+  # against the request shapes in docs/measurements.md, not a browser test.
+  #
+  # Boots its own stack rather than reusing `ci`'s: that job's compose file
+  # publishes no port (nothing outside `docker compose exec` can reach it),
+  # and a reusable-workflow job exposes no output this one could attach to.
+  e2e:
+    concurrency:
+      group: ck-${{ github.repository }}-${{ github.ref }}-e2e
+      cancel-in-progress: true
+    runs-on: ${{ vars.CK_RUNS_ON || 'ubuntu-latest' }}
+    env:
+      CK_COMPOSE_FILE: .docker/docker-compose.ci.yml
+      COMPOSE_PROJECT_NAME: ck-${{ github.run_id }}-${{ github.run_attempt }}-e2e
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+
+      # Same GitHub App as the `ci` job's sibling_repo, minted again here:
+      # a reusable-workflow job cannot hand its token to a sibling job.
+      - name: Mint a read token for the keyring checkout
+        id: app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ vars.CIVICO_APP_ID }}
+          private-key: ${{ secrets.CIVICO_APP_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: keyring
+          permission-contents: read
+
+      # Dot-prefixed for the same two reasons as civikitchen's own sibling
+      # checkout: invisible to CiviCRM's extension scanner (it would
+      # otherwise be discovered a second time through outlook365's own
+      # mount) and to cklint's own ignore list.
+      - name: Check out keyring
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+          repository: civico-de/keyring
+          token: ${{ steps.app.outputs.token }}
+          path: .civikitchen-siblings/keyring
+
+      # Port 8200 is fixed, not derived: CIVIKITCHEN_SITE_URL in the compose
+      # file's own environment would have to move with it, and the e2e
+      # suite's BASE_URL default (tests/e2e/lib.sh) already matches it.
+      # dataprocessor is not mounted here — it resolves through the same
+      # civikitchen.yaml pin the `ci` job's stack uses.
+      - name: Compose override — publish the port, mount keyring
+        run: |
+          set -euo pipefail
+          override="$RUNNER_TEMP/civikitchen-e2e-override.yml"
+          cat > "$override" <<YAML
+          services:
+            app:
+              ports:
+                - "8200:80"
+              volumes:
+                - $GITHUB_WORKSPACE/.civikitchen-siblings/keyring:/var/www/html/ext/keyring:ro
+              environment:
+                CIVIKITCHEN_ENABLE_EXTENSIONS: "keyring,outlook365"
+          YAML
+          echo "CK_E2E_OVERRIDE=$override" >> "$GITHUB_ENV"
+
+      - name: Start CiviCRM stack
+        run: |
+          docker compose -f "$CK_COMPOSE_FILE" -f "$CK_E2E_OVERRIDE" \
+            down -v --remove-orphans
+          docker compose -f "$CK_COMPOSE_FILE" -f "$CK_E2E_OVERRIDE" \
+            up -d --wait --quiet-pull
+
+      # tests/e2e/40-uistrings.sh resolves assets/UIStrings.js with node,
+      # on the runner rather than in the container — it needs no stack.
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '24'
+
+      - name: tests/e2e (bash tests/e2e/run.sh)
+        run: bash tests/e2e/run.sh
+
+      - name: Raw e2e evidence on failure
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: e2e-out
+          path: tests/e2e/out/
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: App logs on failure
+        if: failure()
+        run: docker compose -f "$CK_COMPOSE_FILE" logs app | tail -200
+
+      - name: Tear down the stack
+        if: always()
+        run: |
+          docker ps -aq --filter "label=com.docker.compose.project=$COMPOSE_PROJECT_NAME" | xargs -r docker rm -f -v
+          docker network ls -q --filter "label=com.docker.compose.project=$COMPOSE_PROJECT_NAME" | xargs -r docker network rm
