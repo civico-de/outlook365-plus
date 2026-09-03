@@ -47,30 +47,15 @@
   };
 
   async function getGroups(config) {
-    var url = restUrl(config) + '?';
-    var data = {
-      "entity": "Group",
-      "action": "get",
-      "api_key": config.apikey,
-      "key": config.sitekey,
-      "json": {
-        "sequential": 1,
-        "return": ["id", "title"],
-        "is_active": '1',
-        "is_hidden": '0',
-        "options": {
-          "limit": 0,
-        }
+    await CiviCRM.api3(config, 'Group', 'get', {
+      "sequential": 1,
+      "return": ["id", "title"],
+      "is_active": '1',
+      "is_hidden": '0',
+      "options": {
+        "limit": 0,
       }
-    };
-    for (var prop in data) {
-      if (prop == 'json') {
-        url = url + '&' + prop + '=' + encodeURI(JSON.stringify(data[prop]));
-      } else {
-        url = url + '&' + prop + '=' + data[prop];
-      }
-    }
-    await $.getJSON(url, {}, addGroups);
+    }).done(addGroups);
   }
 
   function addGroups(data) {
@@ -106,20 +91,12 @@
     return decodeURIComponent(results[2].replace(/\+/g, " "));
   }
 
-  /**
-   * Base URL for APIv3 requests (used by the legacy entity/action/json calls above).
-   */
-  function restUrl(config) {
-    return config.url + '/civicrm/ajax/rest';
-  }
-
   function getConfig() {
     var config = {};
 
     config.url = (Office.context.roamingSettings.get('civicrm_url') || '').replace(/\/+$/, '');
-    config.sitekey = Office.context.roamingSettings.get('civicrm_sitekey');
-    config.apikey = Office.context.roamingSettings.get('civicrm_apikey');
-    if (config.url && config.apikey && config.sitekey) {
+    config.token = Office.context.roamingSettings.get('civicrm_token');
+    if (config.url && config.token) {
       return config;
     }
     return null;

@@ -91,6 +91,7 @@
 </script>
 
 <script type="text/javascript" src="{$baseurl}assets/UIStrings.js"></script>
+<script type="text/javascript" src="{$baseurl}assets/civicrm.js"></script>
 <script type="text/javascript" src="{$baseurl}assets/taskpane.js"></script>
 </body>
 

@@ -133,13 +133,6 @@
       });
     }
 
-    /**
-     * Base URL for APIv3 requests (used by the legacy entity/action/json calls below).
-     */
-    function restUrl(config) {
-      return config.url + '/civicrm/ajax/rest';
-    }
-
     function savingEmailInFolderInfo() {
       $('#saving-email-notice').show();
       $('#saved-email-notice').hide();
@@ -148,21 +141,6 @@
     function emailInFolderSavedInfo() {
       $('#saving-email-notice').hide();
       $('#saved-email-notice').show();
-    }
-
-    /**
-     * Call a CiviCRM API4 action via the civicrm/ajax/api4 endpoint, using the
-     * site/api key credentials stored in the add-in configuration.
-     *
-     * @param entity
-     * @param action
-     * @param params - the api4 params object (select/where/values/etc).
-     */
-    function api4(entity, action, params) {
-      let url = config.url + '/civicrm/ajax/api4/' + encodeURIComponent(entity) + '/' + encodeURIComponent(action) +
-        '?api_key=' + encodeURIComponent(config.apikey) +
-        '&key=' + encodeURIComponent(config.sitekey);
-      return $.post(url, {params: JSON.stringify(params)});
     }
 
     function formatDateTimeForCivi(date) {
@@ -182,7 +160,7 @@
       if (!addresses.length) {
         return contactIds;
       }
-      await api4('Email', 'get', {
+      await CiviCRM.api4(config, 'Email', 'get', {
         select: ['contact_id'],
         where: [['email', 'IN', addresses]],
       }).done(function (result) {
@@ -198,7 +176,7 @@
     }
 
     async function pushEmailActivity(subject, body, date, targetContactIds) {
-      await api4('Activity', 'create', {
+      await CiviCRM.api4(config, 'Activity', 'create', {
         values: {
           "source_contact_id": "user_contact_id",
           "activity_type_id:name": "Email",
@@ -228,7 +206,7 @@
       var url = settingsDialogUrl;
       // Pass along existing values, or at least the site's base URL (known
       // from the server), so the dialog doesn't ask the user to guess it.
-      var prefill = config || (crmBaseUrl ? {url: crmBaseUrl, sitekey: '', apikey: ''} : null);
+      var prefill = config || (crmBaseUrl ? {url: crmBaseUrl, token: ''} : null);
       if (prefill) {
         url = url + '?config=' + JSON.stringify(prefill);
       }
@@ -288,52 +266,22 @@
 
     async function saveContactToCRM(contact) {
       let contactName = splitContactName(contact.name);
-      var url = restUrl(config) + '?';
-      var data = {
-        "entity": "Contact",
-        "action": "create",
-        "api_key": config.apikey,
-        "key": config.sitekey,
-        "json": {
-          "first_name": contactName.firstName,
-          'last_name': contactName.lastName,
-          "contact_type": 'Individual',
-        }
-      };
-      for (var prop in data) {
-        if (prop == 'json') {
-          url = url + '&' + prop + '=' + encodeURI(JSON.stringify(data[prop]));
-        } else {
-          url = url + '&' + prop + '=' + data[prop];
-        }
-      }
       var contact_info
-      await $.post(url, function (result, status) {
+      await CiviCRM.api3(config, 'Contact', 'create', {
+        "first_name": contactName.firstName,
+        'last_name': contactName.lastName,
+        "contact_type": 'Individual',
+      }).done(function (result) {
         contact_info = result
       }).fail(response => {
         openDialog(dialogComponent);
       });
       var contact_id = contact_info.id
 
-      url = restUrl(config) + '?';
-      data = {
-        "entity": "Email",
-        "action": "create",
-        "api_key": config.apikey,
-        "key": config.sitekey,
-        "json": {
-          "contact_id": contact_id,
-          "email": contact.email,
-        }
-      };
-      for (var prop in data) {
-        if (prop == 'json') {
-          url = url + '&' + prop + '=' + JSON.stringify(data[prop]);
-        } else {
-          url = url + '&' + prop + '=' + data[prop];
-        }
-      }
-      await $.post(url, function (result, status) {
+      await CiviCRM.api3(config, 'Email', 'create', {
+        "contact_id": contact_id,
+        "email": contact.email,
+      }).done(function (result) {
         console.log(result)
       }).fail(response => {
         openDialog(dialogComponent);
@@ -440,25 +388,10 @@
     }
 
     async function saveContactGroup(contactId, groupId) {
-      var url = restUrl(config) + '?';
-      var data = {
-        "entity": "GroupContact",
-        "action": "create",
-        "api_key": config.apikey,
-        "key": config.sitekey,
-        "json": {
-          "group_id": groupId,
-          "contact_id": contactId,
-        }
-      };
-      for (var prop in data) {
-        if (prop == 'json') {
-          url = url + '&' + prop + '=' + encodeURI(JSON.stringify(data[prop]));
-        } else {
-          url = url + '&' + prop + '=' + data[prop];
-        }
-      }
-      await $.post(url, function (result, status) {
+      await CiviCRM.api3(config, 'GroupContact', 'create', {
+        "group_id": groupId,
+        "contact_id": contactId,
+      }).done(function (result) {
         console.log(result)
       }).fail(response => {
         openDialog(dialogComponent);
@@ -467,26 +400,11 @@
     }
 
     async function addGroupToCRM(name) {
-      var url = restUrl(config) + '?';
-      var data = {
-        "entity": "Group",
-        "action": "create",
-        "api_key": config.apikey,
-        "key": config.sitekey,
-        "json": {
-          "title": name,
-          "name": name,
-        }
-      };
-      for (var prop in data) {
-        if (prop == 'json') {
-          url = url + '&' + prop + '=' + JSON.stringify(data[prop]);
-        } else {
-          url = url + '&' + prop + '=' + data[prop];
-        }
-      }
       let groupInfo
-      await $.post(url, function (result, status) {
+      await CiviCRM.api3(config, 'Group', 'create', {
+        "title": name,
+        "name": name,
+      }).done(function (result) {
         groupInfo = result
       }).fail(response => {
         openDialog(dialogComponent);
@@ -496,29 +414,11 @@
     }
 
     async function checkContact(val) {
-      var url = restUrl(config) + '?';
-      var data = {
-        "entity": "Email",
-        "action": "get",
-        "api_key": config.apikey,
-        "key": config.sitekey,
-        "json": {
-          "email": val.emailAddress,
-        }
-      };
-      for (var prop in data) {
-        if (prop == 'json') {
-          url = url + '&' + prop + '=' + JSON.stringify(data[prop]);
-        } else {
-          url = url + '&' + prop + '=' + data[prop];
-        }
-      }
-      var contact_info
       var exist = null
       var contact_url = CRMContactURL
       var contact_name = null
       var contact_id
-      await $.post(url, function (result, status) {
+      await CiviCRM.api3(config, 'Email', 'get', {"email": val.emailAddress}).done(function (result) {
         exist = false
         if (result["count"] > 0) {
           exist = true
@@ -530,24 +430,7 @@
         openDialog(dialogComponent);
       });
       if (exist) {
-        url = restUrl(config) + '?'
-        data = {
-          "entity": "Contact",
-          "action": "getsingle",
-          "api_key": config.apikey,
-          "key": config.sitekey,
-          "json": {
-            "id": contact_id,
-          }
-        };
-        for (var prop in data) {
-          if (prop == 'json') {
-            url = url + '&' + prop + '=' + JSON.stringify(data[prop]);
-          } else {
-            url = url + '&' + prop + '=' + data[prop];
-          }
-        }
-        await $.post(url, function (result, status) {
+        await CiviCRM.api3(config, 'Contact', 'getsingle', {"id": contact_id}).done(function (result) {
           contact_name = result["display_name"]
         }).fail(response => {
           openDialog(dialogComponent);
@@ -685,9 +568,8 @@
       var config = {};
 
       config.url = (Office.context.roamingSettings.get('civicrm_url') || '').replace(/\/+$/, '');
-      config.sitekey = Office.context.roamingSettings.get('civicrm_sitekey');
-      config.apikey = Office.context.roamingSettings.get('civicrm_apikey');
-      if (config.url && config.apikey && config.sitekey) {
+      config.token = Office.context.roamingSettings.get('civicrm_token');
+      if (config.url && config.token) {
         return config;
       }
       return null;
@@ -701,8 +583,7 @@
      */
     async function setConfig(config, callback) {
       await Office.context.roamingSettings.set('civicrm_url', config.url);
-      await Office.context.roamingSettings.set('civicrm_sitekey', config.sitekey);
-      await Office.context.roamingSettings.set('civicrm_apikey', config.apikey);
+      await Office.context.roamingSettings.set('civicrm_token', config.token);
       Office.context.roamingSettings.saveAsync(callback);
     }
 

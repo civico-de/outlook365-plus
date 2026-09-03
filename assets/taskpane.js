@@ -13,13 +13,6 @@
 
     var fields = [];
 
-    /**
-     * Base URL for APIv3 requests (used by the legacy entity/action/json calls below).
-     */
-    function restUrl(config) {
-      return config.url + '/civicrm/ajax/rest';
-    }
-
     jQuery(document).ready(function () {
       // Set localized text for UI elements.
       $("#loadingContacts .ms-Spinner-label").text(UIText.Loading);
@@ -176,25 +169,10 @@
         return;
       }
       $('#loadingContacts').show();
-      var url = restUrl(config) + '?';
-      var data = {
-        "entity": "Outlook365Contact",
-        "action": "getfields",
-        "api_key": config.apikey,
-        "key": config.sitekey,
-        "json": {
-          "sequential": 1,
-          "api_action": "get"
-        }
-      };
-      for (var prop in data) {
-        if (prop == 'json') {
-          url = url + '&' + prop + '=' + JSON.stringify(data[prop]);
-        } else {
-          url = url + '&' + prop + '=' + data[prop];
-        }
-      }
-      $.getJSON(url, {}, function (result) {
+      CiviCRM.api3(config, 'Outlook365Contact', 'getfields', {
+        "sequential": 1,
+        "api_action": "get"
+      }).done(function (result) {
         fields = [];
         if (!result.is_error) {
           for (var i in result.values) {
@@ -218,32 +196,18 @@
       if (!moreAvailable || !config) {
         return;
       }
-      var url = restUrl(config) + '?';
-      var data = {
-        "entity": "Group",
-        "action": "get",
-        "api_key": config.apikey,
-        "key": config.sitekey,
-        "json": {
-          "sequential": 1,
-          "return": ["id", "name", "title"],
-          "options": {
-            "offset": currentOffset,
-            "limit": 25,
-          }
+      var params = {
+        "sequential": 1,
+        "return": ["id", "name", "title"],
+        "options": {
+          "offset": currentOffset,
+          "limit": 25,
         }
       };
       if (search) {
-        data.json.name = {"LIKE": '%' + search + '%'};
+        params.name = {"LIKE": '%' + search + '%'};
       }
-      for (var prop in data) {
-        if (prop == 'json') {
-          url = url + '&' + prop + '=' + encodeURI(JSON.stringify(data[prop]));
-        } else {
-          url = url + '&' + prop + '=' + data[prop];
-        }
-      }
-      $.getJSON(url, {}, addGroups);
+      CiviCRM.api3(config, 'Group', 'get', params).done(addGroups);
     }
 
     /**
@@ -307,28 +271,14 @@
       let name = $(this).parent('.CiviCRM-Group-Email').data('civicrm-name').replace(" ", "-").toLowerCase();
       let id = $(this).parent('.CiviCRM-Group-Email').data('civicrm-id');
       // $(this).parent().append('<div id="' + name + '-expanded-groups"></div>');
-      var url = restUrl(config) + '?';
-      var data = {
-        "entity": "Outlook365Group",
-        "action": "get",
-        "api_key": config.apikey,
-        "key": config.sitekey,
-        "json": {
-          "sequential": 1,
-          "options": {
-            "limit": 0,
-          },
-          "group_id": id,
-        }
+      var params = {
+        "sequential": 1,
+        "options": {
+          "limit": 0,
+        },
+        "group_id": id,
       };
-      for (var prop in data) {
-        if (prop == 'json') {
-          url = url + '&' + prop + '=' + JSON.stringify(data[prop]);
-        } else {
-          url = url + '&' + prop + '=' + data[prop];
-        }
-      }
-      let html = await getGroupContacts(url)
+      let html = await getGroupContacts(params)
 
       var buttons = '<button class="ms-Button ms-Button--small to"><span class="ms-Button-label">' + UIText.To + '</span></button>' +
         '<button class="ms-Button ms-Button--small cc"><span class="ms-Button-label">' + UIText.Cc + '</span></button>' +
@@ -397,20 +347,12 @@
 
       $("#group_search_" + id + " #groupSearchField").on("keypress", async function (e) {
         if (e.keyCode == 13) {
-          let newUrl = restUrl(config) + '?';
           let groupSearchVal = $(this).val();
           console.log(groupSearchVal)
           if (groupSearchVal != '') {
-            data.json.display_name = {"LIKE": '%' + groupSearchVal + '%'};
+            params.display_name = {"LIKE": '%' + groupSearchVal + '%'};
           }
-          for (var prop in data) {
-            if (prop == 'json') {
-              newUrl = newUrl + '&' + prop + '=' + encodeURI(JSON.stringify(data[prop]));
-            } else {
-              newUrl = newUrl + '&' + prop + '=' + data[prop];
-            }
-          }
-          let newHtml = await getGroupContacts(newUrl)
+          let newHtml = await getGroupContacts(params)
           $("." + id + '-list-email').html(newHtml)
           console.log(newHtml)
           return false; // prevent the button click from happening
@@ -418,9 +360,9 @@
       });
     }
 
-    async function getGroupContacts(url) {
+    async function getGroupContacts(params) {
       var html = '';
-      await $.getJSON(url, {}, function (data) {
+      await CiviCRM.api3(config, 'Outlook365Group', 'get', params).done(function (data) {
         for (var i in data.values) {
           var contact = data.values[i];
           var contact_url = CRMContactURL;
@@ -446,29 +388,11 @@
     }
 
     async function checkContact(val) {
-      var url = restUrl(config) + '?';
-      var data = {
-        "entity": "Email",
-        "action": "get",
-        "api_key": config.apikey,
-        "key": config.sitekey,
-        "json": {
-          "email": val.emailAddress,
-        }
-      };
-      for (var prop in data) {
-        if (prop == 'json') {
-          url = url + '&' + prop + '=' + JSON.stringify(data[prop]);
-        } else {
-          url = url + '&' + prop + '=' + data[prop];
-        }
-      }
-      var contact_info
       var exist = null
       var contact_url = CRMContactURL
       var contact_name = null
       var contact_id
-      await $.post(url, function (result, status) {
+      await CiviCRM.api3(config, 'Email', 'get', {"email": val.emailAddress}).done(function (result) {
         exist = false
         if (result["count"] > 0) {
           exist = true
@@ -480,24 +404,7 @@
         openDialog(dialogComponent);
       });
       if (exist) {
-        url = restUrl(config) + '?'
-        data = {
-          "entity": "Contact",
-          "action": "getsingle",
-          "api_key": config.apikey,
-          "key": config.sitekey,
-          "json": {
-            "id": contact_id,
-          }
-        };
-        for (var prop in data) {
-          if (prop == 'json') {
-            url = url + '&' + prop + '=' + JSON.stringify(data[prop]);
-          } else {
-            url = url + '&' + prop + '=' + data[prop];
-          }
-        }
-        await $.post(url, function (result, status) {
+        await CiviCRM.api3(config, 'Contact', 'getsingle', {"id": contact_id}).done(function (result) {
           contact_name = result["display_name"]
         }).fail(response => {
           openDialog(dialogComponent);
@@ -515,32 +422,17 @@
         return;
       }
       $('#loadingContacts').show();
-      var url = restUrl(config) + '?';
-      var data = {
-        "entity": "Outlook365Contact",
-        "action": "get",
-        "api_key": config.apikey,
-        "key": config.sitekey,
-        "json": {
-          "sequential": 1,
-          "options": {
-            "offset": currentOffset,
-            "limit": 25,
-          }
+      var params = {
+        "sequential": 1,
+        "options": {
+          "offset": currentOffset,
+          "limit": 25,
         }
       };
       if (search) {
-        data.json.display_name = {"LIKE": '%' + search + '%'};
+        params.display_name = {"LIKE": '%' + search + '%'};
       }
-      for (var prop in data) {
-        if (prop == 'json') {
-          url = url + '&' + prop + '=' + JSON.stringify(data[prop]);
-        } else {
-          url = url + '&' + prop + '=' + data[prop];
-        }
-      }
-      url = encodeURI(url);
-      $.getJSON(url, {}, addContacts);
+      CiviCRM.api3(config, 'Outlook365Contact', 'get', params).done(addContacts);
     }
 
     /**
@@ -653,7 +545,7 @@
       var url = settingsDialogUrl;
       // Pass along existing values, or at least the site's base URL (known
       // from the server), so the dialog doesn't ask the user to guess it.
-      var prefill = config || (crmBaseUrl ? {url: crmBaseUrl, sitekey: '', apikey: ''} : null);
+      var prefill = config || (crmBaseUrl ? {url: crmBaseUrl, token: ''} : null);
       if (prefill) {
         url = url + '?config=' + JSON.stringify(prefill);
       }
@@ -687,9 +579,8 @@
       var config = {};
 
       config.url = (Office.context.roamingSettings.get('civicrm_url') || '').replace(/\/+$/, '');
-      config.sitekey = Office.context.roamingSettings.get('civicrm_sitekey');
-      config.apikey = Office.context.roamingSettings.get('civicrm_apikey');
-      if (config.url && config.apikey && config.sitekey) {
+      config.token = Office.context.roamingSettings.get('civicrm_token');
+      if (config.url && config.token) {
         return config;
       }
       return null;
@@ -703,8 +594,7 @@
      */
     function setConfig(config, callback) {
       Office.context.roamingSettings.set('civicrm_url', config.url);
-      Office.context.roamingSettings.set('civicrm_sitekey', config.sitekey);
-      Office.context.roamingSettings.set('civicrm_apikey', config.apikey);
+      Office.context.roamingSettings.set('civicrm_token', config.token);
 
       Office.context.roamingSettings.saveAsync(callback);
     }
