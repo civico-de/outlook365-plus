@@ -12,10 +12,13 @@ First, download and enable the extension dependencies:
 
 Then enable the **Outlook 365 Integration** extension
 
-After enabling the dependencies and this extension, install the two required Data Processors which are also shown here, https://lab.civicrm.org/extensions/outlook365/-/tree/master/data-processors?ref_type=heads
+Enabling the extension installs the two Data Processors it ships, which back
+the `Outlook365Contact` and `Outlook365Group` API entities:
 
 * Outlook 365 Contacts
 * Outlook 365 Groups
+
+Their definitions live in `data-processors/` in this repository.
 
 ## Obtain the CiviCRM Site URL and an API token
 
