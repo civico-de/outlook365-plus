@@ -1,16 +1,17 @@
 /* Transport for every CiviCRM call the add-in makes.
    The credential travels in a request header, never in a URL or a body. */
 
-var CiviCRM = (function () {
+window.CiviCRM = (function () {
   "use strict";
 
   function request(config, url, data) {
-    return $.ajax({
+    // jQuery is loaded by every page that loads this file.
+    return window.jQuery.ajax({
       url: url,
       type: "POST",
       dataType: "json",
-      headers: {"X-Civi-Auth": "Bearer " + config.token},
-      data: data
+      headers: { "X-Civi-Auth": "Bearer " + config.token },
+      data: data,
     });
   }
 
@@ -26,7 +27,7 @@ var CiviCRM = (function () {
     return request(config, config.url + "/civicrm/ajax/rest", {
       entity: entity,
       action: action,
-      json: JSON.stringify(params)
+      json: JSON.stringify(params),
     });
   }
 
@@ -39,10 +40,14 @@ var CiviCRM = (function () {
    * @param params - the APIv4 params object (select/where/values/etc.)
    */
   function api4(config, entity, action, params) {
-    var url = config.url + "/civicrm/ajax/api4/" +
-      encodeURIComponent(entity) + "/" + encodeURIComponent(action);
-    return request(config, url, {params: JSON.stringify(params)});
+    const url =
+      config.url +
+      "/civicrm/ajax/api4/" +
+      encodeURIComponent(entity) +
+      "/" +
+      encodeURIComponent(action);
+    return request(config, url, { params: JSON.stringify(params) });
   }
 
-  return {api3: api3, api4: api4};
+  return { api3: api3, api4: api4 };
 })();

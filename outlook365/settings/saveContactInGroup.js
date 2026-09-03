@@ -1,3 +1,4 @@
+// ck-allow-api3 -- upstream's APIv3 call sites, routed through assets/civicrm.js; migrating them belongs upstream
 (function () {
   'use strict';
 
