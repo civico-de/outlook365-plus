@@ -1,0 +1,60 @@
+# Dev stack for the fork: CiviCRM (civikitchen standalone) + MariaDB, with
+# keyring and dataprocessor mounted alongside this extension.
+#
+# Usage:
+#   ./fetch-ext.sh                            # once: clone dataprocessor
+#   cd .docker && docker compose up -d        # first boot: auto-install + provisioning
+#
+# URL:  CiviCRM http://localhost:8200 (admin/admin)
+#
+# Re-provision from scratch (re-runs init.d hooks): docker compose down -v && up -d
+
+# Explicit project name — unnamed .docker/ stacks all become one project
+# called "docker" and share volumes across checkouts. The ports are chosen
+# clear of the keyring stack (8100/8101/1180/1125).
+name: outlook365
+
+services:
+  app:
+    image: ${CIVIKITCHEN_IMAGE:-ghcr.io/jfilter/civikitchen:v1}
+    pull_policy: always
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8200:80"
+    environment:
+      CIVICRM_AUTO_INSTALL: "1"
+      CIVICRM_DB_HOST: db
+      CIVICRM_DB_NAME: civicrm
+      CIVICRM_DB_USER: civicrm
+      CIVICRM_DB_PASSWORD: civicrm
+      # Must match the host:port opened in the browser (asset URLs).
+      CIVIKITCHEN_SITE_URL: "http://localhost:8200"
+      CIVIKITCHEN_DEMO_USER: admin
+      # Order matters: dataprocessor is a <requires> of this extension, and
+      # keyring owns the credential this extension sends.
+      CIVIKITCHEN_ENABLE_EXTENSIONS: "authx,dataprocessor,keyring,outlook365"
+    volumes:
+      - ..:/var/www/html/ext/outlook365
+      - ../../keyring:/var/www/html/ext/keyring:ro
+      - ${OUTLOOK365_EXT_DIR:-${HOME}/.cache/outlook365-ext}/dataprocessor:/var/www/html/ext/dataprocessor:ro
+      - ./init.d:/civikitchen-init.d:ro
+
+  db:
+    image: mariadb:10.11
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: civicrm
+      MYSQL_USER: civicrm
+      MYSQL_PASSWORD: civicrm
+    volumes:
+      - db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  db-data:
