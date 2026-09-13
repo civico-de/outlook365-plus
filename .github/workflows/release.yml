@@ -2,7 +2,7 @@ name: Release
 
 on:
   push:
-    tags: ['v[0-9]+.[0-9]+.[0-9]+']
+    tags: ['v[0-9]+.[0-9]+.[0-9]+', 'v[0-9]+.[0-9]+.[0-9]+-*']
 
 permissions:
   contents: read
@@ -12,3 +12,8 @@ jobs:
     permissions:
       contents: write
     uses: jfilter/civikitchen/.github/workflows/extension-release.yml@v1
+    with:
+      composer_app_repositories: keyring
+    secrets:
+      composer_app_id: ${{ vars.CIVICO_APP_ID }}
+      composer_app_private_key: ${{ secrets.CIVICO_APP_KEY }}
