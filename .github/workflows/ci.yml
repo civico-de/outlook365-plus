@@ -47,7 +47,7 @@ jobs:
       sibling_repo: civico-de/keyring
       composer_app_repositories: keyring
     secrets:
-      composer_app_id: ${{ vars.CIVICO_APP_ID }}
+      composer_app_id: ${{ vars.CIVICO_APP_CLIENT_ID }}
       composer_app_private_key: ${{ secrets.CIVICO_APP_KEY }}
 
   # The e2e suite is this fork's only test asset (policy.tests: optional —
@@ -78,7 +78,7 @@ jobs:
         id: app
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
-          app-id: ${{ vars.CIVICO_APP_ID }}
+          client-id: ${{ vars.CIVICO_APP_CLIENT_ID }}
           private-key: ${{ secrets.CIVICO_APP_KEY }}
           owner: ${{ github.repository_owner }}
           repositories: keyring

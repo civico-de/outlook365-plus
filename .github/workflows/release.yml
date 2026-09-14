@@ -15,5 +15,5 @@ jobs:
     with:
       composer_app_repositories: keyring
     secrets:
-      composer_app_id: ${{ vars.CIVICO_APP_ID }}
+      composer_app_id: ${{ vars.CIVICO_APP_CLIENT_ID }}
       composer_app_private_key: ${{ secrets.CIVICO_APP_KEY }}
