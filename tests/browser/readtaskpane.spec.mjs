@@ -333,3 +333,22 @@ test("a failed bulk save shows the error, no saved notice and no reload", async 
   h.assertNetwork(log, noAdd.token, key);
   h.revokeToken(noAdd.id);
 });
+
+test("a failed contact save stops saving the mail: no activity, no tag", async ({ page }) => {
+  const noAdd = h.mintToken(subject, NO_ADD);
+  const item = message(11);
+  const log = await h.openPane(page, "readtaskpane.html", {
+    item,
+    roaming: { civicrm_url: h.BASE_URL, civicrm_token: noAdd.token },
+  });
+  await expect(rows(page)).toHaveCount(2);
+  await markDocument(page);
+  await page.locator(".save-email").click();
+  await expect.poll(() => paneState(page)).toEqual(FAILED);
+  const activityCalls = log.requests.filter((r) => r.url().includes("/civicrm/ajax/api4/Activity/"));
+  expect(activityCalls.map((r) => r.url())).toEqual([]);
+  expect(h.sql(`SELECT COUNT(*) FROM civicrm_activity WHERE subject = '${item.subject}'`)).toBe("0");
+  expect((await h.officeState(page)).categories).toEqual([]);
+  h.assertNetwork(log, noAdd.token, key);
+  h.revokeToken(noAdd.id);
+});

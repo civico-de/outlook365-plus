@@ -548,7 +548,6 @@
                if ($(this).hasClass('to_save')) {
                  pendingContacts.push(
                    saveContactToCRM({"name": contact.data('civicrm-name'), "email": contact.data('civicrm-email')})
-                     .then(contactId => targetContactIds.push(contactId))
                  );
                } else {
                  targetContactIds.push(contact.data('civicrm-id'));
@@ -556,7 +555,12 @@
              }
           });
 
-          await Promise.all(pendingContacts);
+          // A failed save has shown the error dialog; the activity would lack that contact.
+          let savedIds = await Promise.all(pendingContacts);
+          if (savedIds.includes(null)) {
+            return;
+          }
+          targetContactIds = targetContactIds.concat(savedIds);
 
           if (await pushEmailActivity(requiredAttendees.subject, emailBody, new Date(requiredAttendees.dateTimeCreated), targetContactIds)) {
             addSavedCategoryToCurrentMessage();
