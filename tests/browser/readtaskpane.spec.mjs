@@ -18,6 +18,9 @@ const newcomer = (n) => ({
   emailAddress: `nia${n}.${run}@example.org`,
 });
 const SAVED = "Saved in CiviCRM";
+const MARKUP = '<img src=x onerror="window.__xss=1">';
+// A scope that can read and edit contacts but not create them.
+const NO_ADD = SCOPE.filter((p) => p !== "add contacts");
 
 let subject;
 let key;
@@ -64,6 +67,36 @@ function activity(subjectLine) {
       .map(Number);
   return { id: Number(id), source: of(2), targets: of(3) };
 }
+
+// The pane's state once it is idle. jQuery runs deferred callbacks from zero-delay
+// timers, so the state is read after timer turns until one turn changes nothing.
+const paneState = (page) =>
+  page
+    .evaluate(async () => {
+      const read = () =>
+        JSON.stringify({
+          errorDialog: jQuery(".ms-Dialog").is(":visible"),
+          savedNotice: jQuery("#saved-contact-help-text").is(":visible"),
+          inFlight: jQuery.active,
+          sameDocument: window.__paneMarker === true,
+        });
+      let previous;
+      let current = read();
+      do {
+        previous = current;
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        current = read();
+      } while (current !== previous);
+      return JSON.parse(current);
+    })
+    // A reload destroys the context; the next poll reads the new document.
+    .catch(() => null);
+// A reload drops the marker.
+const markDocument = (page) =>
+  page.evaluate(() => {
+    window.__paneMarker = true;
+  });
+const FAILED = { errorDialog: true, savedNotice: false, inFlight: 0, sameDocument: true };
 
 test.beforeAll(() => {
   subject = h.seedSubject();
@@ -284,4 +317,19 @@ test("a revoked token shows the error dialog", async ({ page }) => {
     "An error occurred communicating with CiviCRM",
   );
   h.assertNetwork(log, revoked.token, key);
+});
+
+test("a failed bulk save shows the error, no saved notice and no reload", async ({ page }) => {
+  const noAdd = h.mintToken(subject, NO_ADD);
+  const log = await h.openPane(page, "readtaskpane.html", {
+    item: message(10),
+    roaming: { civicrm_url: h.BASE_URL, civicrm_token: noAdd.token },
+  });
+  await expect(rows(page)).toHaveCount(2);
+  await markDocument(page);
+  await page.locator(".save-contact-all").click();
+  await expect.poll(() => paneState(page)).toEqual(FAILED);
+  expect(contactsWithEmail(newcomer(10).emailAddress)).toEqual([]);
+  h.assertNetwork(log, noAdd.token, key);
+  h.revokeToken(noAdd.id);
 });

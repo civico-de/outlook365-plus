@@ -328,8 +328,12 @@
     async function confirmSaveAllContact(event) {
       $(this).prop('disabled', true);
       showSavingContactInfo();
-      await saveAllContact();
+      let saved = await saveAllContact();
       $(this).prop('disabled', false);
+      if (!saved) {
+        $('#saving-contact-help-text').toggle(false);
+        return;
+      }
       showContactSavedInfo();
       location.reload();
     }
@@ -344,7 +348,11 @@
       $('#saved-contact-help-text').toggle(true);
     }
 
-    async function saveAllContact(event) {
+    /**
+     * Saves the selected unknown addresses; stops at the first failure, which
+     * has shown the error dialog, and returns false.
+     */
+    async function saveAllContact() {
       let toSave = []
       $('.ms-List').children().each(function (index) {
         if ($(this).hasClass('to_save') && $(this).hasClass('is-selected')) {
@@ -353,10 +361,12 @@
         }
       });
 
-
-      for (const [key, val] of Object.entries(toSave)) {
-        await saveContactToCRM({"name": val[0], "email": val[1]})
+      for (const [name, email] of toSave) {
+        if (!(await saveContactToCRM({"name": name, "email": email}))) {
+          return false;
+        }
       }
+      return true;
     }
 
     async function confirmSaveAllContactInGroup(event) {
