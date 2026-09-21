@@ -35,6 +35,11 @@ Each user of the Outlook integration needs one keyring token on their CiviCRM
 Contact, issued on the contact's **API tokens** tab. The plaintext is shown
 once, at issue; a lost token is replaced, never recovered.
 
+The token's scope needs **access CiviCRM**, **access AJAX API**, **view all
+contacts**, **edit all contacts**, **add contacts**, **view all activities** and
+**edit all activities**; adding contacts to a group also needs **edit groups**.
+A call outside the scope makes the task pane show an error.
+
 The contact also needs the **authenticate with api key** permission, on top of
 whatever the token's own scope allows. The Add-in sends no site key, so that
 permission is what satisfies authx's guard.
