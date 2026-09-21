@@ -32,11 +32,24 @@
 
   // The task pane answers "ready" with [[id, title], ...].
   function addGroups(arg) {
-    JSON.parse(arg.message).forEach(function (group) {
-      $('.group-select-dropdown').append($('<option>').val(group[0]).text(group[1]));
+    var groups = JSON.parse(arg.message);
+    groups.forEach(function (group) {
+      $('.group-select-dropdown').append($('<option>').val(group[0]));
     });
-    // Fabric builds its option list from the select once, so only now.
+    // Fabric builds its items from the select once, writing option text as HTML,
+    // so the titles go in as text after it has built them.
     new fabric['Dropdown'](document.querySelector('.ms-Dropdown'));
+    var options = $('.group-select-dropdown option');
+    var items = $('.ms-Dropdown-item');
+    groups.forEach(function (group, i) {
+      options.eq(i + 1).text(group[1]);
+      items.eq(i + 1).text(group[1]);
+    });
+    // Fabric also copies a picked item's text into the title as HTML.
+    Object.defineProperty(document.querySelector('.ms-Dropdown > .ms-Dropdown-title:not(.ms-Dropdown-truncator)'), 'innerHTML', {
+      get: function () { return this.textContent; },
+      set: function (value) { this.textContent = value; },
+    });
     $('#group-select-done').prop('disabled', false);
   }
 

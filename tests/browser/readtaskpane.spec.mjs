@@ -382,3 +382,36 @@ test("names from the mail, from Outlook and from CiviCRM render as text", async 
   expect(await page.evaluate(() => window.__xss)).toBeUndefined();
   h.assertNetwork(log, minted.token, key);
 });
+
+test("the save-to-group dialog shows group titles as text", async ({ page }) => {
+  const title = `${MARKUP} Group ${run}`;
+  const [{ id: groupId }] = h.cv("Group.create", { values: { title } });
+  const log = await open(page, message(13));
+  await expect(rows(page)).toHaveCount(2);
+  await page.locator(".save-contact-all-group").click();
+  const dialog = page.frameLocator("#office-dialog");
+  const item = dialog.locator(".ms-Dropdown-item", { hasText: title });
+  await expect(item).toHaveCount(1);
+  await expect(item).toHaveText(title);
+  // Picking an item must add no element: markup parsed even briefly would be.
+  const frame = page.frame({ url: /saveContactInGroup/ });
+  await frame.evaluate(() => {
+    window.__added = [];
+    new MutationObserver((records) =>
+      records.forEach((r) =>
+        r.addedNodes.forEach((n) => n.nodeType === 1 && window.__added.push(n.tagName)),
+      ),
+    ).observe(document.body, { childList: true, subtree: true });
+  });
+  await dialog.locator(".ms-Dropdown > .ms-Dropdown-title:not(.ms-Dropdown-truncator)").click();
+  await item.click();
+  await expect(
+    dialog.locator(".ms-Dropdown > .ms-Dropdown-title:not(.ms-Dropdown-truncator)"),
+  ).toHaveText(title);
+  await expect(dialog.locator(".group-select-dropdown")).toHaveValue(String(groupId));
+  await expect(dialog.locator("img")).toHaveCount(0);
+  expect(await frame.evaluate(() => window.__added)).toEqual([]);
+  expect(await frame.evaluate(() => window.__xss)).toBeUndefined();
+  h.assertNetwork(log, minted.token, key);
+  h.cv("Group.delete", { where: [["id", "=", groupId]] });
+});
