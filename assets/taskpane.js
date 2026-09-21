@@ -157,6 +157,7 @@
         }
       }
       $('#loadingContacts').hide();
+      $('#civicrm-error').hide();
       $('#contacts').html('');
       $('#groups').html('');
       currentOffset = 0;
@@ -192,7 +193,14 @@
             }
           }
         }
-      });
+      }).fail(showError);
+    }
+
+    /**
+     * A failed call shows an error; an empty list would read as "no data".
+     */
+    function showError() {
+      $('#civicrm-error').show();
     }
 
     /**
@@ -214,7 +222,7 @@
       if (search) {
         params.title = {"LIKE": '%' + search + '%'};
       }
-      CiviCRM.api3(config, 'Group', 'get', params).done(addGroups);
+      CiviCRM.api3(config, 'Group', 'get', params).done(addGroups).fail(showError);
     }
 
     /**
@@ -384,7 +392,7 @@
             '</li>';
           // break
         }
-      });
+      }).catch(showError);
       html += '<script type="text/javascript">\n' +
         '  var ListItemElements = document.querySelectorAll(".ms-ListItem");\n' +
         '  for (var i = 0; i < ListItemElements.length; i++) {\n' +
@@ -439,7 +447,7 @@
       if (search) {
         params.display_name = {"LIKE": '%' + search + '%'};
       }
-      CiviCRM.api3(config, 'Outlook365Contact', 'get', params).done(addContacts);
+      CiviCRM.api3(config, 'Outlook365Contact', 'get', params).done(addContacts).fail(showError);
     }
 
     /**

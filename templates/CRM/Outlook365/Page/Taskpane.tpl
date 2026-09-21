@@ -29,6 +29,9 @@
     <div class="not-configured-warning ms-MessageBar ms-MessageBar--warning" style="display: none;">
       <div class="ms-font-l" id="settings-prompt"></div>
     </div>
+    <div id="civicrm-error" class="ms-MessageBar ms-MessageBar--error" role="alert" style="display: none;">
+      <div class="ms-font-l">{ts}An error occurred communicating with CiviCRM. This action could not be completed{/ts}</div>
+    </div>
 
     <div class="ms-CommandBar-mainArea">
       <div class="ms-CommandButton ms-CommandButton--pivot is-active">

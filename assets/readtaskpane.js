@@ -183,7 +183,7 @@
     }
 
     async function pushEmailActivity(subject, body, date, targetContactIds) {
-      await CiviCRM.api4(config, 'Activity', 'create', {
+      return CiviCRM.api4(config, 'Activity', 'create', {
         values: {
           "source_contact_id": "user_contact_id",
           "activity_type_id:name": "Email",
@@ -192,8 +192,9 @@
           "activity_date_time": formatDateTimeForCivi(date),
           "target_contact_id": targetContactIds,
         },
-      }).fail(response => {
+      }).then(() => true, () => {
         openDialog(dialogComponent);
+        return false;
       });
     }
 
@@ -287,9 +288,12 @@
         "contact_type": 'Individual',
       }).done(function (result) {
         contact_info = result
-      }).fail(response => {
+      }).catch(response => {
         openDialog(dialogComponent);
       });
+      if (!contact_info) {
+        return null;
+      }
       var contact_id = contact_info.id
 
       await CiviCRM.api3(config, 'Email', 'create', {
@@ -297,8 +301,9 @@
         "email": contact.email,
       }).done(function (result) {
         console.log(result)
-      }).fail(response => {
+      }).catch(response => {
         openDialog(dialogComponent);
+        contact_id = null;
       });
       return contact_id
     }
@@ -309,8 +314,12 @@
       let name = $(event.target).parent().data('civicrm-name')
       let email = $(event.target).parent().data('civicrm-email');
       let contact = {name: name, email: email};
-      await saveContactToCRM(contact);
+      let saved = await saveContactToCRM(contact);
       $(this).prop('disabled', false);
+      if (!saved) {
+        $('#saving-contact-help-text').toggle(false);
+        return;
+      }
       showContactSavedInfo();
       showContacts();
     }
@@ -392,17 +401,17 @@
             groupId = groupInfo["selectedGroup"]
           } else {
             groupResult = await addGroupToCRM(groupInfo['groupName'])
-            groupId = groupResult["id"]
+            groupId = groupResult && groupResult["id"]
           }
 
+          // The first failure has shown the error dialog; stop there.
           for (var key in toSave) {
-            if (toSave[key][2] === true) {
-              console.log("tosave in CRM")
-              let contactId = await saveContactToCRM({"name": toSave[key][0], "email": toSave[key][1]})
-              await saveContactGroup(contactId, groupId)
-            } else {
-              console.log("nottosave in CRM")
-              await saveContactGroup(toSave[key][3], groupId)
+            let contactId = toSave[key][2] === true
+              ? await saveContactToCRM({"name": toSave[key][0], "email": toSave[key][1]})
+              : toSave[key][3];
+            if (!groupId || !contactId || !(await saveContactGroup(contactId, groupId))) {
+              confirmDialog.close();
+              return;
             }
           }
           confirmDialog.close();
@@ -415,15 +424,13 @@
     }
 
     async function saveContactGroup(contactId, groupId) {
-      await CiviCRM.api3(config, 'GroupContact', 'create', {
+      return CiviCRM.api3(config, 'GroupContact', 'create', {
         "group_id": groupId,
         "contact_id": contactId,
-      }).done(function (result) {
-        console.log(result)
-      }).fail(response => {
+      }).then(() => true, () => {
         openDialog(dialogComponent);
+        return false;
       });
-
     }
 
     async function addGroupToCRM(name) {
@@ -433,7 +440,7 @@
         "name": name,
       }).done(function (result) {
         groupInfo = result
-      }).fail(response => {
+      }).catch(response => {
         openDialog(dialogComponent);
       });
 
@@ -453,13 +460,16 @@
           contact_id = result["values"][keys[0]]["contact_id"]
           contact_url += "&cid=" + String(contact_id)
         }
-      }).fail(response => {
+      }).catch(response => {
         openDialog(dialogComponent);
       });
+      if (exist === null) {
+        return null;
+      }
       if (exist) {
         await CiviCRM.api3(config, 'Contact', 'getsingle', {"id": contact_id}).done(function (result) {
           contact_name = result["display_name"]
-        }).fail(response => {
+        }).catch(response => {
           openDialog(dialogComponent);
         });
       }
@@ -471,25 +481,14 @@
 
       let html = '<ul class="ms-List">'
 
-      //adding sender
-      let res = await checkContact(requiredAttendees.from)
-      html += await getListItem(requiredAttendees.from, res)
-
-      //adding to
-      for (const [key, val] of Object.entries(requiredAttendees.to)) {
+      // Sender, then To, Cc and Bcc. A lookup that failed has shown the error
+      // dialog; listing its address as unknown would invite a duplicate.
+      let addresses = [requiredAttendees.from].concat(requiredAttendees.to, requiredAttendees.cc, requiredAttendees.bcc);
+      for (const val of addresses) {
         let res = await checkContact(val)
-        html += await getListItem(val, res)
-      }
-
-      //adding CC
-      for (const [key, val] of Object.entries(requiredAttendees.cc)) {
-        let res = await checkContact(val)
-        html += await getListItem(val, res)
-      }
-
-      //adding BCC
-      for (const [key, val] of Object.entries(requiredAttendees.bcc)) {
-        let res = await checkContact(val)
+        if (!res) {
+          return;
+        }
         html += await getListItem(val, res)
       }
       html += '</ul>'
@@ -541,8 +540,9 @@
 
           await Promise.all(pendingContacts);
 
-          await pushEmailActivity(requiredAttendees.subject, emailBody, new Date(requiredAttendees.dateTimeCreated), targetContactIds);
-          addSavedCategoryToCurrentMessage();
+          if (await pushEmailActivity(requiredAttendees.subject, emailBody, new Date(requiredAttendees.dateTimeCreated), targetContactIds)) {
+            addSavedCategoryToCurrentMessage();
+          }
         });
     }
 

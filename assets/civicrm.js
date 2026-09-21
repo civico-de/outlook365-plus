@@ -24,10 +24,13 @@ window.CiviCRM = (function () {
    * @param params - the APIv3 params object
    */
   function api3(config, entity, action, params) {
+    // APIv3 reports errors as HTTP 200 with is_error; reject those like a failed request.
     return request(config, config.url + "/civicrm/ajax/rest", {
       entity: entity,
       action: action,
       json: JSON.stringify(params),
+    }).then(function (result) {
+      return result.is_error ? window.jQuery.Deferred().reject(result) : result;
     });
   }
 
