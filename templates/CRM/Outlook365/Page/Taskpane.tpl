@@ -1,6 +1,6 @@
 {crmScope extensionKey='outlook365'}
 <!DOCTYPE html>
-<html>
+<html lang="{$config->lcMessages|default:'en_US'|replace:'_':'-'}">
 
 <head>
   <meta charset="UTF-8" />
@@ -54,8 +54,8 @@
       <div id="search-form">
         <div class="ms-SearchBox ms-SearchBox--commandBar">
           <input class="ms-SearchBox-field" id="searchField" type="text" value="">
-          <label class="ms-SearchBox-label">
-            <i class="ms-SearchBox-icon ms-Icon ms-Icon--Search"></i>
+          <label class="ms-SearchBox-label" for="searchField">
+            <i class="ms-SearchBox-icon ms-Icon ms-Icon--Search" aria-hidden="true"></i>
             <span class="ms-SearchBox-text">{ts}Search{/ts}</span>
           </label>
           <div class="ms-CommandButton ms-SearchBox-clear ms-CommandButton--noLabel">

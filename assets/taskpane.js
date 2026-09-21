@@ -25,6 +25,9 @@
       $("#loadingContacts .ms-Spinner-label").text(UIText.Loading);
       $("#searchField .ms-SearchBox-text").text(UIText.Search);
       $('#settings-prompt').html(UIText.NotConfigured);
+      // Fabric's search box ships its clear button without a label of any kind.
+      $('.ms-SearchBox-clear .ms-CommandButton-button').attr('aria-label', UIText.Clear);
+      $('#searchField').attr('aria-label', UIText.Search);
       $('#settings-icon .label').text(UIText.Settings);
 
       reset();
@@ -104,10 +107,12 @@
       if (currentTab === "contacts") {
         $("#search-form").show();
         $('#search-form span.ms-SearchBox-text').text(UIText.ContactScreen.Placeholder);
+        $('#searchField').attr('aria-label', UIText.ContactScreen.Placeholder);
         loadNextContacts()
       } else if (currentTab === "groups") {
         $("#search-form").show();
         $('#search-form span.ms-SearchBox-text').text(UIText.GroupScreen.Placeholder);
+        $('#searchField').attr('aria-label', UIText.GroupScreen.Placeholder);
         loadNextGroups()
       }
 
@@ -116,13 +121,13 @@
     function getSearchForm(id) {
       let html = '<div id="group_search_' + id + '">' +
         '<div class="ms-SearchBox ms-SearchBox--commandBar search-in-group">' +
-        '<input class="ms-SearchBox-field" id="groupSearchField" type="text" value="">' +
-        '<label class="ms-SearchBox-label">' +
-        '<i class="ms-SearchBox-icon ms-Icon ms-Icon--Search"></i>' +
+        '<input class="ms-SearchBox-field" id="groupSearchField_' + id + '" type="text" value="">' +
+        '<label class="ms-SearchBox-label" for="groupSearchField_' + id + '">' +
+        '<i class="ms-SearchBox-icon ms-Icon ms-Icon--Search" aria-hidden="true"></i>' +
         '<span class="ms-SearchBox-text">' + UIText.ContactScreen.Placeholder + '</span>' +
         '</label>' +
         '<div class="ms-CommandButton ms-SearchBox-clear ms-CommandButton--noLabel">' +
-        '<button class="ms-CommandButton-button">' +
+        '<button class="ms-CommandButton-button" aria-label="' + UIText.Clear + '">' +
         '<span class="ms-CommandButton-icon"><i class="ms-Icon ms-Icon--Clear"></i></span>' +
         '<span class="ms-CommandButton-label"></span>' +
         '</button>' +
@@ -310,6 +315,7 @@
         '<button class="ms-Button ms-Button--small unselectAll"><span class="ms-Button-label">' + UIText.GroupScreen.UnselectAll + '</span></button></div>')
       header.append(getSearchForm(id))
       $("#group_search_" + id + " .ms-SearchBox-text").text(UIText.GroupScreen.SearchContact);
+      $("#groupSearchField_" + id).attr('aria-label', UIText.GroupScreen.SearchContact);
 
       header.append($('<ul class="ms-List">').addClass(id + '-list-email').append(members));
       var SearchBoxElements = document.querySelectorAll(".ms-SearchBox");
@@ -367,7 +373,7 @@
         }
       });
 
-      $("#group_search_" + id + " #groupSearchField").on("keypress", async function (e) {
+      $("#groupSearchField_" + id).on("keypress", async function (e) {
         if (e.keyCode == 13) {
           let groupSearchVal = $(this).val();
           console.log(groupSearchVal)

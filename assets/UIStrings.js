@@ -9,6 +9,7 @@ var UIStrings = (function () {
   UIStrings.default =
   {
     "Search": "Search",
+    "Clear": "Clear the search",
     "Loading": "Retrieving contacts...",
     "To": "To",
     "Cc": "Cc",

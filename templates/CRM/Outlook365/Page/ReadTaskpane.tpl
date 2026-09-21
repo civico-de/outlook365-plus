@@ -1,6 +1,6 @@
 {crmScope extensionKey='outlook365'}
 <!DOCTYPE html>
-<html>
+<html lang="{$config->lcMessages|default:'en_US'|replace:'_':'-'}">
 
 <head>
   <meta charset="UTF-8" />
