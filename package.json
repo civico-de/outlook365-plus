@@ -1,0 +1,13 @@
+{
+  "name": "outlook365-browser-tests",
+  "private": true,
+  "description": "Browser tests for the Outlook task pane pages, run against a civikitchen stack.",
+  "license": "AGPL-3.0",
+  "scripts": {
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "office-ui-fabric-js": "1.4.0"
+  }
+}

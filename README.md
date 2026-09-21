@@ -39,6 +39,8 @@ The delta, in full:
 | The settings field renamed to an API token, and stored as `civicrm_token` | `outlook365/settings/dialog.*`, `assets/UIStrings.js` |
 | `com.cividesk.apikey` dropped from `<requires>`, `keyring` added; fork metadata and `<ver>6.17` | `info.xml` |
 | A dev stack and an e2e suite proving the above | `.docker/`, `tests/e2e/` |
+| A browser suite driving the real task panes with a stubbed office.js | `tests/browser/`, `playwright.config.js`, `package.json` |
+| Failed CiviCRM calls shown as an error, APIv3 `is_error` answers included; the save-to-group dialog gets its group list from the pane | `assets/*.js`, `outlook365/settings/saveContactInGroup.*`, `templates/CRM/Outlook365/Page/Taskpane.tpl` |
 | The inherited civix-upgrade workflow removed — it fires on every push, calls a third-party reusable workflow and names an extension key this repository does not use | `.github/` |
 
 Everything else — the data processors, the manifest, the Office glue, the task
@@ -87,10 +89,24 @@ operations guide on report mode in <https://github.com/civico-de/keyring>.
 cd .docker && docker compose up -d      # CiviCRM on http://localhost:8200 (admin/admin)
 
 bash tests/e2e/run.sh                   # from the host, against that stack
+
+npm ci && npx playwright install chromium   # once
+npm run test:e2e                        # browser suite, against that stack
 ```
 
 The suite needs `curl`, `python3` and `node` on the host; `tests/e2e/40-uistrings.sh`
 resolves `assets/UIStrings.js` with node and runs without the stack.
+
+`tests/browser/` loads `civicrm/outlook365/taskpane.html` and `readtaskpane.html`
+from the stack in Chromium. `office.js` is replaced by `tests/browser/office-stub.js`,
+which holds the fixture mail and the settings and throws on any Office member it
+does not model; dialogs open as iframes that may call only what Microsoft's dialog
+API allows there. Each run mints its own keyring token for the seeded
+non-superuser through `tests/e2e/lib.sh` and checks every request (token only in
+`X-Civi-Auth`, no site key), the pane's output and the rows written. Fabric comes
+from the `office-ui-fabric-js` package at the version the pages load; any other
+request to an external host fails the test. `CIVICRM_BASE_URL` (default
+`http://localhost:8200`) and `CK_COMPOSE_FILE` point it at another stack.
 
 The compose project is named `outlook365` and mounts this checkout, the sibling
 `keyring` checkout and the cached `dataprocessor` clone.
@@ -106,13 +122,15 @@ stack:
 cklint --all && ckconform && ckcivix --check && ckfmt --check && ckeslint
 phpstan analyse && ckcompat && ckdeps && cktaint && cksmarty
 bash tests/e2e/run.sh
+npm run test:e2e
 ```
 
 plus `ckinit --check` for template drift and a disable/enable/uninstall/install
 pass (`lifecycle: true`). The e2e job mounts `keyring` from a private checkout
 and boots the CI stack with port 8200 published; `dataprocessor` resolves
 through the pinned archive in `civikitchen.yaml` (`policy.extension_sources`),
-same as the `ci` job's own stack.
+same as the `ci` job's own stack. The browser suite runs in civikitchen's
+`playwright` job on its own stack (port 8080, `keyring` as `sibling_repo`).
 
 ## Documentation
 
