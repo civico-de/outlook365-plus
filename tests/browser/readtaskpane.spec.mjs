@@ -73,18 +73,21 @@ function activity(subjectLine) {
 const paneState = (page) =>
   page
     .evaluate(async () => {
+      const $ = window.jQuery;
       const read = () =>
         JSON.stringify({
-          errorDialog: jQuery(".ms-Dialog").is(":visible"),
-          savedNotice: jQuery("#saved-contact-help-text").is(":visible"),
-          inFlight: jQuery.active,
+          errorDialog: $(".ms-Dialog").is(":visible"),
+          savedNotice: $("#saved-contact-help-text").is(":visible"),
+          inFlight: $.active,
           sameDocument: window.__paneMarker === true,
         });
       let previous;
       let current = read();
       do {
         previous = current;
-        await new Promise((resolve) => setTimeout(resolve, 0));
+        await new Promise((resolve) => {
+          setTimeout(resolve, 0);
+        });
         current = read();
       } while (current !== previous);
       return JSON.parse(current);
@@ -345,16 +348,23 @@ test("a failed contact save stops saving the mail: no activity, no tag", async (
   await markDocument(page);
   await page.locator(".save-email").click();
   await expect.poll(() => paneState(page)).toEqual(FAILED);
-  const activityCalls = log.requests.filter((r) => r.url().includes("/civicrm/ajax/api4/Activity/"));
+  const activityCalls = log.requests.filter((r) =>
+    r.url().includes("/civicrm/ajax/api4/Activity/"),
+  );
   expect(activityCalls.map((r) => r.url())).toEqual([]);
-  expect(h.sql(`SELECT COUNT(*) FROM civicrm_activity WHERE subject = '${item.subject}'`)).toBe("0");
+  expect(h.sql(`SELECT COUNT(*) FROM civicrm_activity WHERE subject = '${item.subject}'`)).toBe(
+    "0",
+  );
   expect((await h.officeState(page)).categories).toEqual([]);
   h.assertNetwork(log, noAdd.token, key);
   h.revokeToken(noAdd.id);
 });
 
 test("names from the mail, from Outlook and from CiviCRM render as text", async ({ page }) => {
-  const sender = { displayName: `${MARKUP} Sender ${run}`, emailAddress: `sender.${run}@example.org` };
+  const sender = {
+    displayName: `${MARKUP} Sender ${run}`,
+    emailAddress: `sender.${run}@example.org`,
+  };
   const marked = { displayName: "Marked", emailAddress: `marked.${run}@example.org` };
   const [{ id: markedId }] = h.cv("Contact.create", {
     values: { contact_type: "Individual", first_name: MARKUP, last_name: `Marked ${run}` },
