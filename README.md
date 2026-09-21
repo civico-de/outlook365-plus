@@ -42,10 +42,12 @@ The delta, in full:
 | A browser suite driving the real task panes with a stubbed office.js | `tests/browser/`, `playwright.config.mjs`, `package.json` |
 | Failed CiviCRM calls shown as an error, APIv3 `is_error` answers included; the save-to-group dialog gets its group list from the pane | `assets/*.js`, `outlook365/settings/saveContactInGroup.*`, `templates/CRM/Outlook365/Page/Taskpane.tpl` |
 | The read pane's "Save Folder in CiviCRM" removed: it listed and tagged folders through the Outlook REST API, which Microsoft has retired | `assets/readtaskpane.js`, `templates/CRM/Outlook365/Page/ReadTaskpane.tpl` |
+| The task panes made accessible: tab labels and icon-only controls exposed, the contact and group lists operable from the keyboard, the document language declared, and an axe-core check over both panes | `templates/CRM/Outlook365/Page/*.tpl`, `assets/taskpane.js`, `assets/readtaskpane.js`, `assets/taskpane.css`, `assets/UIStrings.js`, `tests/browser/a11y.spec.mjs` |
+| The group list paged on scroll instead of repeating its first page | `assets/taskpane.js` |
 | The inherited civix-upgrade workflow removed — it fires on every push, calls a third-party reusable workflow and names an extension key this repository does not use | `.github/` |
 
-Everything else — the data processors, the manifest, the Office glue, the task
-panes — is upstream's, unchanged.
+Everything else — the data processors, the manifest and the Office glue — is
+upstream's, unchanged.
 
 ### Rebasing on upstream
 
