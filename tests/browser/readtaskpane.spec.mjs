@@ -420,3 +420,46 @@ test("the rows, the save buttons and settings answer the keyboard alone", async 
   await expect(page.frameLocator("#office-dialog").locator("#civicrm-url")).toHaveValue(h.BASE_URL);
   h.assertNetwork(log, minted.token, key);
 });
+
+// APIv3 calls all share one URL, so the entity and action come from the form body.
+const api3Calls = (log, entity, action) =>
+  log.requests.filter((r) => {
+    const body = new URLSearchParams(r.postData() || "");
+    return body.get("entity") === entity && body.get("action") === action;
+  });
+
+test("save all contacts creates every selected unknown address and reloads", async ({ page }) => {
+  const item = message(16, { to: [newcomer("16a"), newcomer("16b")] });
+  const log = await open(page, item);
+  await expect(rows(page)).toHaveCount(3);
+  await markDocument(page);
+  await page.locator(".save-contact-all").click();
+  // The reload is the pane's own confirmation that every save came back.
+  await expect.poll(async () => (await paneState(page))?.sameDocument).toBe(false);
+  await expect(rows(page)).toHaveCount(3);
+  await expect(rows(page).nth(1)).toHaveClass(/not_to_save/);
+  await expect(rows(page).nth(2)).toHaveClass(/not_to_save/);
+  expect(contactsWithEmail(newcomer("16a").emailAddress)).toHaveLength(1);
+  expect(contactsWithEmail(newcomer("16b").emailAddress)).toHaveLength(1);
+  expect(api3Calls(log, "Contact", "create")).toHaveLength(2);
+  h.assertNetwork(log, minted.token, key);
+});
+
+test("save all contacts stops at the first refusal instead of saving on", async ({ page }) => {
+  const noAdd = h.mintToken(subject, NO_ADD);
+  const item = message(17, { to: [newcomer("17a"), newcomer("17b")] });
+  const log = await h.openPane(page, "readtaskpane.html", {
+    item,
+    roaming: { civicrm_url: h.BASE_URL, civicrm_token: noAdd.token },
+  });
+  await expect(rows(page)).toHaveCount(3);
+  await markDocument(page);
+  await page.locator(".save-contact-all").click();
+  await expect.poll(() => paneState(page)).toEqual(FAILED);
+  // Only the first address was tried; the second never left the pane.
+  expect(api3Calls(log, "Contact", "create")).toHaveLength(1);
+  expect(contactsWithEmail(newcomer("17a").emailAddress)).toEqual([]);
+  expect(contactsWithEmail(newcomer("17b").emailAddress)).toEqual([]);
+  h.assertNetwork(log, noAdd.token, key);
+  h.revokeToken(noAdd.id);
+});
