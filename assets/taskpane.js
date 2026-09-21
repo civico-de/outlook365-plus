@@ -260,6 +260,8 @@
           $('#groups').append(
             $('<div class="ms-Persona">').append($('<div class="ms-Persona-details">').append(header))
           );
+          // The offset the next page starts at; without it every scroll repeats the first page.
+          currentOffset++;
           $('#' + idname + '-expand-groups').on('click', expandGroups);
         }
 

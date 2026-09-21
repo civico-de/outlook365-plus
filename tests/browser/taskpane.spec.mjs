@@ -209,3 +209,92 @@ test("a group is expanded, selected and addressed from the keyboard alone", asyn
   await expect(page.locator("#groups .ms-ListItem")).toHaveCount(0);
   h.assertNetwork(log, minted.token, key);
 });
+
+// Which pages a filtered list asked the server for, in order.
+const pageOffsets = (log, entity) =>
+  log.requests
+    .map((r) => new URLSearchParams(r.postData() || ""))
+    .filter((b) => b.get("entity") === entity && b.get("action") === "get")
+    .map((b) => JSON.parse(b.get("json")))
+    .filter((p) => p.display_name || p.title)
+    .map((p) => p.options.offset);
+const scrollToEnd = (page) =>
+  page.evaluate(() => {
+    window.scrollTo(0, document.documentElement.scrollHeight);
+  });
+
+test.describe("a list longer than one page", () => {
+  // One more than the page size, so the second page ends the list.
+  const PAGE = 25;
+  const COUNT = PAGE + 1;
+  const tag = `Scroll ${run}`;
+
+  test.beforeAll(() => {
+    // The data processor behind the contact list joins an email address, so each one needs one.
+    const created = h.cv("Contact.save", {
+      records: Array.from({ length: COUNT }, (_, i) => ({
+        contact_type: "Individual",
+        first_name: `C${String(i).padStart(2, "0")}`,
+        last_name: tag,
+      })),
+    });
+    h.cv("Email.save", {
+      records: created.map((c, i) => ({
+        contact_id: c.id,
+        email: `scroll${String(i).padStart(2, "0")}.${run}@example.org`,
+        is_primary: true,
+      })),
+    });
+    h.cv("Group.save", {
+      records: Array.from({ length: COUNT }, (_, i) => ({
+        title: `${tag} ${String(i).padStart(2, "0")}`,
+      })),
+    });
+  });
+  test.afterAll(() => {
+    h.cv("Contact.delete", { where: [["last_name", "=", tag]] });
+    h.cv("Group.delete", { where: [["title", "LIKE", `${tag} %`]] });
+  });
+
+  test("scrolling to the end loads the next page of contacts exactly once", async ({ page }) => {
+    const log = await h.openPane(page, "taskpane.html", { item: compose, roaming: configured() });
+    await expect(page.locator("#contacts .ms-Persona").first()).toBeVisible();
+    await page.locator("#searchField").fill(tag);
+    await page.locator("#searchField").press("Enter");
+    await expect(page.locator("#contacts .ms-Persona")).toHaveCount(PAGE);
+    expect(pageOffsets(log, "Outlook365Contact")).toEqual([0]);
+
+    await scrollToEnd(page);
+    await expect(page.locator("#contacts .ms-Persona")).toHaveCount(COUNT);
+    expect(pageOffsets(log, "Outlook365Contact")).toEqual([0, PAGE]);
+
+    // The list is exhausted: further scrolling asks for nothing more.
+    await scrollToEnd(page);
+    await scrollToEnd(page);
+    await page.waitForLoadState("networkidle");
+    expect(pageOffsets(log, "Outlook365Contact")).toEqual([0, PAGE]);
+    await expect(page.locator("#contacts .ms-Persona")).toHaveCount(COUNT);
+    h.assertNetwork(log, minted.token, key);
+  });
+
+  test("scrolling to the end loads the next page of groups exactly once", async ({ page }) => {
+    const log = await h.openPane(page, "taskpane.html", { item: compose, roaming: configured() });
+    await page.getByRole("tab", { name: "Groups", exact: true }).click();
+    await expect(page.locator("#groups .ms-Persona").first()).toBeVisible();
+    await page.locator("#searchField").fill(tag);
+    await page.locator("#searchField").press("Enter");
+    await expect(page.locator("#groups .ms-Persona")).toHaveCount(PAGE);
+    expect(pageOffsets(log, "Group")).toEqual([0]);
+
+    await scrollToEnd(page);
+    await expect(page.locator("#groups .ms-Persona")).toHaveCount(COUNT);
+    expect(pageOffsets(log, "Group")).toEqual([0, PAGE]);
+
+    await scrollToEnd(page);
+    await scrollToEnd(page);
+    await page.waitForLoadState("networkidle");
+    expect(pageOffsets(log, "Group")).toEqual([0, PAGE]);
+    await expect(page.locator("#groups .ms-Persona")).toHaveCount(COUNT);
+    h.assertNetwork(log, minted.token, key);
+  });
+});
