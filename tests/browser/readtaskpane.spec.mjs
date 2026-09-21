@@ -385,3 +385,12 @@ test("the save-to-group dialog shows group titles as text", async ({ page }) => 
   h.assertNetwork(log, minted.token, key);
   h.cv("Group.delete", { where: [["id", "=", groupId]] });
 });
+
+test("the command bar exposes its label and a settings button", async ({ page }) => {
+  const log = await open(page, message(14));
+  await expect(rows(page)).toHaveCount(2);
+  await expect(page.getByRole("heading", { name: "Contacts", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Settings", exact: true })).toBeVisible();
+  await expect(page.locator(".pivot-tab i[aria-hidden='true']")).toHaveCount(2);
+  h.assertNetwork(log, minted.token, key);
+});

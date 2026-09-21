@@ -34,14 +34,22 @@
     </div>
 
     <div class="ms-CommandBar-mainArea">
-      <div class="ms-CommandButton ms-CommandButton--pivot is-active">
-          <i class="ms-Icon ms-Icon--Contact" aria-hidden="true" ><span class="ms-font-l contacts">{ts}Contacts{/ts}</span></i>
-      </div>
-      <div class="ms-CommandButton ms-CommandButton--pivot">
-          <i class="ms-Icon ms-Icon--Group" aria-hidden="true"><span class="ms-font-l groups">{ts}Groups{/ts}</span></i>
+      <div class="pivot-tabs" role="tablist">
+        <div class="ms-CommandButton ms-CommandButton--pivot is-active" role="presentation">
+          <button type="button" class="pivot-tab contacts" role="tab" id="tab-contacts" aria-controls="contacts" aria-selected="true">
+            <i class="ms-Icon ms-Icon--Contact" aria-hidden="true"></i><span class="ms-font-l">{ts}Contacts{/ts}</span>
+          </button>
+        </div>
+        <div class="ms-CommandButton ms-CommandButton--pivot" role="presentation">
+          <button type="button" class="pivot-tab groups" role="tab" id="tab-groups" aria-controls="groups" aria-selected="false">
+            <i class="ms-Icon ms-Icon--Group" aria-hidden="true"></i><span class="ms-font-l">{ts}Groups{/ts}</span>
+          </button>
+        </div>
       </div>
       <div class="ms-CommandButton ms-CommandButton--pivot" id="settings-icon">
-          <i class="ms-Icon ms-Icon--Settings" aria-hidden="true"> <span class="ms-font-l settings">{ts}Settings{/ts}</span>  </i>
+          <button type="button" class="pivot-tab settings" aria-haspopup="dialog">
+            <i class="ms-Icon ms-Icon--Settings" aria-hidden="true"></i><span class="ms-font-l">{ts}Settings{/ts}</span>
+          </button>
       </div>
       <div id="search-form">
         <div class="ms-SearchBox ms-SearchBox--commandBar">
@@ -74,9 +82,9 @@
     <div class="dataclass">
       <br>
     </div>
-    <div class="dataclass" id="contacts">
+    <div class="dataclass" id="contacts" role="tabpanel" aria-labelledby="tab-contacts">
     </div>
-    <div class="dataclass" id="groups">
+    <div class="dataclass" id="groups" role="tabpanel" aria-labelledby="tab-groups">
     </div>
 
   </section>

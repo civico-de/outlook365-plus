@@ -149,3 +149,28 @@ test("contact names and group titles from CiviCRM render as text", async ({ page
   expect(await page.evaluate(() => window.__xss)).toBeUndefined();
   h.assertNetwork(log, minted.token, key);
 });
+
+test("the tabs expose their labels and keep the selected state in sync", async ({ page }) => {
+  const log = await h.openPane(page, "taskpane.html", { item: compose, roaming: configured() });
+  await expect(page.locator("#contacts .ms-Persona").first()).toBeVisible();
+  const contacts = page.getByRole("tab", { name: "Contacts", exact: true });
+  const groups = page.getByRole("tab", { name: "Groups", exact: true });
+  await expect(page.getByRole("tablist")).toHaveCount(1);
+  await expect(contacts).toHaveAttribute("aria-controls", "contacts");
+  await expect(groups).toHaveAttribute("aria-controls", "groups");
+  await expect(contacts).toHaveAttribute("aria-selected", "true");
+  await expect(groups).toHaveAttribute("aria-selected", "false");
+  await expect(page.getByRole("button", { name: "Settings", exact: true })).toBeVisible();
+  // The label is the tab's whole accessible name; the glyph stays out of it.
+  await expect(page.locator(".pivot-tab i[aria-hidden='true']")).toHaveCount(3);
+
+  await groups.click();
+  await expect(page.locator("#groups .ms-Persona").first()).toBeVisible();
+  await expect(groups).toHaveAttribute("aria-selected", "true");
+  await expect(contacts).toHaveAttribute("aria-selected", "false");
+  await expect(groups.locator("xpath=..")).toHaveClass(/is-active/);
+  await expect(page.locator(".ms-CommandButton--pivot.is-active")).toHaveCount(1);
+  await expect(page.locator("#groups")).toHaveAttribute("role", "tabpanel");
+  await expect(page.locator("#civicrm-error")).toHaveAttribute("role", "alert");
+  h.assertNetwork(log, minted.token, key);
+});

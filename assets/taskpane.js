@@ -35,7 +35,7 @@
       }
 
       $('#settings-icon').on('click', openSettingsDialog);
-      $('.ms-CommandButton--pivot span').on('click', handleTabChange);
+      $('[role="tab"]').on('click', handleTabChange);
     });
 
     $("body").delegate(".ms-ListItem", "click", function (event) {
@@ -86,16 +86,13 @@
     /**
      * Handle Tab Change
      */
-    function handleTabChange(event) {
-      let classes = event.target.className.split(" ")
-      let targetTab = classes[classes.length - 1]
-      if (targetTab === "settings") {
-        return
-      }
-      currentTab = targetTab
-      let parentselector = $($(event.target).parent()).parent()
+    function handleTabChange() {
+      // The tab names its panel in aria-controls; that id is also the tab's own name.
+      currentTab = $(this).attr('aria-controls')
+      $('[role="tab"]').attr('aria-selected', 'false')
+      $(this).attr('aria-selected', 'true')
       $(".ms-CommandButton.ms-CommandButton--pivot").removeClass("is-active")
-      parentselector.addClass("is-active")
+      $(this).closest(".ms-CommandButton").addClass("is-active")
       $(".dataclass").empty()
       reset()
       if (currentTab === "contacts") {

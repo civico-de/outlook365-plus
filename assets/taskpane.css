@@ -27,12 +27,32 @@
   width: 100%;
 }
 
-.ms-CommandButton i{
+/* The pivot stacks its icon over its label. The label is a sibling of the
+   icon, so aria-hidden hides the glyph alone and the text stays readable. */
+.ms-CommandButton .pivot-tab,
+.ms-CommandButton .ms-CommandButton-icon i{
   display: flex !important;
   flex-direction: column;
   list-style-type: none;
   padding: 15px;
   align-items: center;
+}
+.ms-CommandButton .pivot-tab {
+  margin: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+}
+.ms-CommandButton button.pivot-tab {
+  cursor: pointer;
+}
+/* The tablist wrapper keeps the pivots in the command bar's single row. */
+.pivot-tabs {
+  display: inline-block;
+}
+.pivot-tabs + .ms-CommandButton {
+  margin-left: 8px;
 }
 .ms-CommandButton.ms-CommandButton--pivot:hover {
   background-color: lightgray;
