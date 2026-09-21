@@ -42,8 +42,12 @@ jobs:
     # IS on the registry; its pinned archive (civikitchen.yaml
     # policy.extension_sources) works around a measured install-order race,
     # not an availability gap, so it needs no wiring here.
+    #
+    # `playwright` runs tests/browser/: the real task pane pages in Chromium,
+    # office.js replaced by a stub, against the same stack with keyring mounted.
     with:
       lifecycle: true
+      playwright: true
       sibling_repo: civico-de/keyring
       composer_app_repositories: keyring
     secrets:
@@ -53,8 +57,7 @@ jobs:
   # The e2e suite is this fork's only test asset (policy.tests: optional —
   # it owns no PHP), so unlike a repo with a headless PHPUnit suite, it has
   # to run in CI itself or nothing here actually verifies the fork's own
-  # code. Not civikitchen's own `playwright` input: that suite is bash+curl
-  # against the request shapes in docs/measurements.md, not a browser test.
+  # code. The browser suite runs in the `ci` call's own `playwright` job.
   #
   # Boots its own stack rather than reusing `ci`'s: that job's compose file
   # publishes no port (nothing outside `docker compose exec` can reach it),
