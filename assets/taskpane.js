@@ -402,33 +402,6 @@
       });
     }
 
-    async function checkContact(val) {
-      var exist = null
-      var contact_url = CRMContactURL
-      var contact_name = null
-      var contact_id
-      await CiviCRM.api3(config, 'Email', 'get', {"email": val.emailAddress}).done(function (result) {
-        exist = false
-        if (result["count"] > 0) {
-          exist = true
-          let keys = Object.keys(result["values"])
-          contact_id = result["values"][keys[0]]["contact_id"]
-          contact_url += "&cid=" + String(contact_id)
-        }
-      }).fail(response => {
-        openDialog(dialogComponent);
-      });
-      if (exist) {
-        await CiviCRM.api3(config, 'Contact', 'getsingle', {"id": contact_id}).done(function (result) {
-          contact_name = result["display_name"]
-        }).fail(response => {
-          openDialog(dialogComponent);
-        });
-      }
-
-      return {"exist": exist, "contact_url": contact_url, "contact_name": contact_name, "contact_id": contact_id}
-    }
-
     /**
      * Retrieve next batch of contacts.
      */
