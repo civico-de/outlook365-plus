@@ -1,16 +1,18 @@
 // Stack access through tests/e2e/lib.sh, and a page wired to the office stub
 // with every request logged and nothing leaving for an external host.
 
-const { execFileSync } = require('node:child_process');
-const path = require('node:path');
-const { expect } = require('@playwright/test');
-const { officeStub } = require('./office-stub');
+import { execFileSync } from 'node:child_process';
+import { createRequire } from 'node:module';
+import path from 'node:path';
+import process from 'node:process';
+import { expect } from '@playwright/test';
+import { officeStub } from './office-stub.mjs';
 
-const LIB = path.join(__dirname, '..', 'e2e', 'lib.sh');
-const FABRIC = path.dirname(require.resolve('office-ui-fabric-js/package.json'));
-const BASE_URL = new URL(process.env.CIVICRM_BASE_URL || 'http://localhost:8200').origin;
+const LIB = path.join(import.meta.dirname, '..', 'e2e', 'lib.sh');
+const FABRIC = path.dirname(createRequire(import.meta.url).resolve('office-ui-fabric-js/package.json'));
+export const BASE_URL = new URL(process.env.CIVICRM_BASE_URL || 'http://localhost:8200').origin;
 // Outlook's REST host, answered by route handlers in the tests.
-const REST_URL = 'https://outlook.example.org/api';
+export const REST_URL = 'https://outlook.example.org/api';
 
 // civikitchen's playwright job names its stack's compose file in CK_COMPOSE_FILE.
 const ENV = process.env.CK_COMPOSE_FILE
@@ -26,11 +28,11 @@ function lib(code, ...args) {
   }).trim();
 }
 
-const sql = (query) => lib('sql "$1"', query);
-const cv = (entityAction, params) =>
+export const sql = (query) => lib('sql "$1"', query);
+export const cv = (entityAction, params) =>
   JSON.parse(lib('cvx api4 "$1" "$2"', entityAction, JSON.stringify({ ...params, checkPermissions: false })));
 
-function seedSubject() {
+export function seedSubject() {
   const id = lib('seed_subject');
   if (!/^\d+$/.test(id)) {
     throw new Error(`seed.php returned no contact id: ${id}`);
@@ -38,7 +40,7 @@ function seedSubject() {
   return Number(id);
 }
 
-function mintToken(contactId, permissions) {
+export function mintToken(contactId, permissions) {
   const [id, token] = lib('mint_token "$@"', String(contactId), ...permissions).split(' ');
   if (!/^\d+$/.test(id) || !token?.startsWith('kr_')) {
     throw new Error('mint_token returned no token');
@@ -46,14 +48,14 @@ function mintToken(contactId, permissions) {
   return { id: Number(id), token };
 }
 
-const revokeToken = (id) => lib('revoke_token "$1"', String(id));
-const siteKey = () => lib('site_key');
+export const revokeToken = (id) => lib('revoke_token "$1"', String(id));
+export const siteKey = () => lib('site_key');
 
 /**
  * Opens a task pane page with office.js replaced by the stub. Returns the
  * request log; assertNetwork() checks it against the credential rules.
  */
-async function openPane(page, route, fixture, rest = () => ({ status: 404, body: '' })) {
+export async function openPane(page, route, fixture, rest = () => ({ status: 404, body: '' })) {
   const requests = [];
   const external = [];
   const errors = [];
@@ -100,7 +102,7 @@ async function openPane(page, route, fixture, rest = () => ({ status: 404, body:
  * Every CiviCRM API call carries the token in X-Civi-Auth; no request carries
  * it anywhere else, and none sends the site key.
  */
-function assertNetwork(log, token, key) {
+export function assertNetwork(log, token, key) {
   const api = log.requests.filter((r) => r.url().startsWith(`${BASE_URL}/civicrm/ajax/`));
   expect(api.length, 'the pane made CiviCRM API calls').toBeGreaterThan(0);
   for (const r of api) {
@@ -120,10 +122,8 @@ function assertNetwork(log, token, key) {
 }
 
 // The serialisable part of the stub's state: what the add-in stored or sent to Outlook.
-const officeState = (page) =>
+export const officeState = (page) =>
   page.evaluate(() => {
     const { roaming, saved, dialogUrls, recipients, categories, masterCategories } = window.__officeState;
     return { roaming, saved, dialogUrls, recipients, categories, masterCategories };
   });
-
-module.exports = { BASE_URL, REST_URL, sql, cv, seedSubject, mintToken, revokeToken, siteKey, openPane, assertNetwork, officeState };

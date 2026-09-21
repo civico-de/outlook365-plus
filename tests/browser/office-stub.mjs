@@ -1,8 +1,7 @@
 // Replaces office.js in every frame. Holds fixture data only; any Office
 // member the add-in reads that is not modelled here throws.
 
-/* global window, document */
-function officeStub(fixture) {
+export function officeStub(fixture) {
   const top = window.top;
   const strict = (name, target) =>
     new Proxy(target, {
@@ -150,5 +149,3 @@ function officeStub(fixture) {
     office.initialize('documentOpened');
   });
 }
-
-module.exports = { officeStub };

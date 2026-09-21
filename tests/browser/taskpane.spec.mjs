@@ -1,6 +1,6 @@
 // The compose task pane: contact and group lists, recipients, settings.
-const { test, expect } = require('@playwright/test');
-const h = require('./harness');
+import { test, expect } from '@playwright/test';
+import * as h from './harness.mjs';
 
 // The scope tests/e2e/10-header-auth.sh mints.
 const SCOPE = ['access CiviCRM', 'access AJAX API', 'view all contacts', 'edit all contacts', 'add contacts', 'view all activities', 'edit all activities'];

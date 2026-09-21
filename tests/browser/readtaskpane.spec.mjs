@@ -1,6 +1,6 @@
 // The read task pane: the mail's contacts, saving contacts, the mail and folders.
-const { test, expect } = require('@playwright/test');
-const h = require('./harness');
+import { test, expect } from '@playwright/test';
+import * as h from './harness.mjs';
 
 const SCOPE = ['access CiviCRM', 'access AJAX API', 'view all contacts', 'edit all contacts', 'add contacts', 'view all activities', 'edit all activities'];
 const run = `pw${Date.now().toString(36)}`;

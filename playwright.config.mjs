@@ -1,8 +1,9 @@
 // Browser tests for the task pane pages. They need a running stack — see
 // README.md "Tests" — and reach it through tests/e2e/lib.sh.
-const { defineConfig, devices } = require('@playwright/test');
+import process from 'node:process';
+import { defineConfig, devices } from '@playwright/test';
 
-module.exports = defineConfig({
+export default defineConfig({
   testDir: './tests/browser',
   // Tests share the seeded subject and its token count; serial keeps the DB assertions exact.
   workers: 1,

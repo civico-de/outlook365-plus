@@ -39,7 +39,7 @@ The delta, in full:
 | The settings field renamed to an API token, and stored as `civicrm_token` | `outlook365/settings/dialog.*`, `assets/UIStrings.js` |
 | `com.cividesk.apikey` dropped from `<requires>`, `keyring` added; fork metadata and `<ver>6.17` | `info.xml` |
 | A dev stack and an e2e suite proving the above | `.docker/`, `tests/e2e/` |
-| A browser suite driving the real task panes with a stubbed office.js | `tests/browser/`, `playwright.config.js`, `package.json` |
+| A browser suite driving the real task panes with a stubbed office.js | `tests/browser/`, `playwright.config.mjs`, `package.json` |
 | Failed CiviCRM calls shown as an error, APIv3 `is_error` answers included; the save-to-group dialog gets its group list from the pane | `assets/*.js`, `outlook365/settings/saveContactInGroup.*`, `templates/CRM/Outlook365/Page/Taskpane.tpl` |
 | The inherited civix-upgrade workflow removed — it fires on every push, calls a third-party reusable workflow and names an extension key this repository does not use | `.github/` |
 
