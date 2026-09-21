@@ -1,4 +1,4 @@
-// The read task pane: the mail's contacts, saving contacts, the mail and folders.
+// The read task pane: the mail's contacts, saving contacts and the mail.
 import { test, expect } from "@playwright/test";
 import * as h from "./harness.mjs";
 
@@ -38,13 +38,11 @@ const message = (n, extra = {}) => ({
   dateTimeCreated: "2026-01-02T03:04:05Z",
   ...extra,
 });
-const open = (page, item, rest) =>
-  h.openPane(
-    page,
-    "readtaskpane.html",
-    { item, roaming: { civicrm_url: h.BASE_URL, civicrm_token: minted.token } },
-    rest,
-  );
+const open = (page, item) =>
+  h.openPane(page, "readtaskpane.html", {
+    item,
+    roaming: { civicrm_url: h.BASE_URL, civicrm_token: minted.token },
+  });
 const rows = (page) => page.locator("#contacts .ms-List > .ms-ListItem");
 const contactsWithEmail = (email) =>
   h
@@ -276,38 +274,6 @@ test("a client without DialogApi 1.2 shows an error instead of an empty group li
   h.assertNetwork(log, minted.token, key);
 });
 
-test("saves a mail folder through the Outlook REST API", async ({ page }) => {
-  const mail = {
-    Id: "m1",
-    Subject: `Folder mail ${run}`,
-    Body: { Content: "<p>Example</p>" },
-    Categories: [],
-    From: { EmailAddress: { Address: known.emailAddress } },
-    ToRecipients: [],
-  };
-  const patched = [];
-  const log = await open(page, message(5), (request) => {
-    const url = request.url();
-    if (request.method() === "PATCH") {
-      patched.push(url);
-      return { json: {} };
-    }
-    if (url.endsWith("/v2.0/me/MailFolders")) {
-      return { json: { value: [{ Id: "f1", DisplayName: "Example folder" }] } };
-    }
-    return { json: { value: url.includes("/MailFolders/f1/messages") ? [mail] : [] } };
-  });
-  await page.locator("#target .ms-ListItem", { hasText: "Example folder" }).click();
-  await page.locator("#send-submit").click();
-  await expect(page.locator("#saved-email-notice")).toBeVisible();
-
-  const saved = activity(mail.Subject);
-  expect(saved.source).toEqual([subject]);
-  expect(saved.targets).toEqual([knownId]);
-  expect(patched).toEqual([`${h.REST_URL}/v2.0/me/messages/m1`]);
-  h.assertNetwork(log, minted.token, key);
-});
-
 test("a revoked token shows the error dialog", async ({ page }) => {
   const revoked = h.mintToken(subject, SCOPE);
   h.revokeToken(revoked.id);
@@ -370,10 +336,7 @@ test("names from the mail, from Outlook and from CiviCRM render as text", async 
     values: { contact_type: "Individual", first_name: MARKUP, last_name: `Marked ${run}` },
   });
   h.cv("Email.create", { values: { contact_id: markedId, email: marked.emailAddress } });
-  const folder = { Id: 'f"2', DisplayName: `${MARKUP} Folder ${run}` };
-  const log = await open(page, message(12, { from: sender, to: [marked] }), (request) => ({
-    json: { value: request.url().endsWith("/v2.0/me/MailFolders") ? [folder] : [] },
-  }));
+  const log = await open(page, message(12, { from: sender, to: [marked] }));
   await expect(rows(page)).toHaveCount(2);
   await expect(rows(page).nth(0).locator(".ms-ListItem-secondaryText")).toHaveText(
     sender.displayName,
@@ -385,10 +348,7 @@ test("names from the mail, from Outlook and from CiviCRM render as text", async 
   await expect(rows(page).nth(1).locator(".ms-ListItem-secondaryText")).toHaveText(
     `${MARKUP} Marked ${run}`,
   );
-  const folderItem = page.locator("#target .ms-ListItem");
-  await expect(folderItem).toHaveText(folder.DisplayName);
-  await expect(folderItem).toHaveAttribute("name", folder.Id);
-  await expect(page.locator("#contacts img, #target img")).toHaveCount(0);
+  await expect(page.locator("#contacts img")).toHaveCount(0);
   expect(await page.evaluate(() => window.__xss)).toBeUndefined();
   h.assertNetwork(log, minted.token, key);
 });

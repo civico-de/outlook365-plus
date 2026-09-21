@@ -13,8 +13,6 @@ const FABRIC = path.dirname(
   createRequire(import.meta.url).resolve("office-ui-fabric-js/package.json"),
 );
 export const BASE_URL = new URL(process.env.CIVICRM_BASE_URL || "http://localhost:8200").origin;
-// Outlook's REST host, answered by route handlers in the tests.
-export const REST_URL = "https://outlook.example.org/api";
 
 // civikitchen's playwright job names its stack's compose file in CK_COMPOSE_FILE.
 const ENV = process.env.CK_COMPOSE_FILE
@@ -59,7 +57,7 @@ export const siteKey = () => lib("site_key");
  * Opens a task pane page with office.js replaced by the stub. Returns the
  * request log; assertNetwork() checks it against the credential rules.
  */
-export async function openPane(page, route, fixture, rest = () => ({ status: 404, body: "" })) {
+export async function openPane(page, route, fixture) {
   const requests = [];
   const external = [];
   const errors = [];
@@ -71,14 +69,12 @@ export async function openPane(page, route, fixture, rest = () => ({ status: 404
     roaming: {},
     categories: [],
     masterCategories: [],
-    restUrl: REST_URL,
-    callbackToken: "outlook-callback-token",
     requirementSets: { DialogApi: "1.2" },
     ...fixture,
   });
   await page.context().route("**/*", (r) => {
     const url = new URL(r.request().url());
-    if (url.origin === BASE_URL || url.origin === new URL(REST_URL).origin) {
+    if (url.origin === BASE_URL) {
       return r.fallback();
     }
     if (url.pathname.endsWith("/hosted/office.js")) {
@@ -94,12 +90,6 @@ export async function openPane(page, route, fixture, rest = () => ({ status: 404
     }
     return r.abort();
   });
-  // Outlook's REST host: rest(request) returns the fulfil options.
-  await page
-    .context()
-    .route(`${REST_URL}/**`, (r) =>
-      r.fulfill({ headers: { "access-control-allow-origin": "*" }, ...rest(r.request()) }),
-    );
 
   await page.goto(`${BASE_URL}/civicrm/outlook365/${route}`);
   return { requests, external, errors };

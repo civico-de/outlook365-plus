@@ -70,17 +70,6 @@
       <button class="ms-Button ms-Button--medium save-email">
         <span class="ms-Button-label">{ts}Save Email{/ts}</span>
       </button>
-      <p>{ts}Select one or more email folders to save all the emails to CiviCRM as an Activity.{/ts}</p>
-          <form id="folder-form">
-
-            <ul class="ms-List" id="target">
-            </ul>
-            <button class="ms-Button ms-Button--medium" id="send-submit">
-              <span class="ms-Button-label">{ts}Save Folder in CiviCRM{/ts}</span>
-            </button>
-            <p id="saving-email-notice" style="display: none;">{ts}Emails are being saved to CiviCRM, please wait...{/ts}</p>
-            <p id="saved-email-notice" style="display: none;">{ts}All emails have been saved to CiviCRM and assigned the "Saved in CiviCRM" category{/ts}</p>
-          </form>
       </div>
 
   </section>

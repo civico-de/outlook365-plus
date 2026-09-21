@@ -111,8 +111,6 @@ export function officeStub(fixture) {
       }),
       mailbox: strict("mailbox", {
         item,
-        restUrl: fixture.restUrl,
-        getCallbackTokenAsync: (options, cb) => cb(done(fixture.callbackToken)),
         masterCategories: strict("masterCategories", {
           addAsync: (list, cb) => {
             state.masterCategories.push(...list.map((c) => c.displayName));

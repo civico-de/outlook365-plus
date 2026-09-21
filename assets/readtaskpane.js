@@ -6,7 +6,6 @@
     var requiredAttendees = Office.context.mailbox.item;
     var config = false;
     var saveDialog = null
-    var accessToken = null;
 
     var myLanguage = Office.context.displayLanguage;
     var UIText = UIStrings.getLocaleStrings(myLanguage);
@@ -20,39 +19,6 @@
     jQuery(document).ready(async function () {
       // Set localized text for UI elements.
       await reset();
-
-      Office.context.mailbox.getCallbackTokenAsync({isRest: true}, function (result) {
-        accessToken = result.value;
-        var getMessageUrl = Office.context.mailbox.restUrl + '/v2.0/me/MailFolders';
-
-        $.ajax({
-          url: getMessageUrl,
-          dataType: 'json',
-          headers: {'Authorization': 'Bearer ' + accessToken}
-        }).done(function (data) {
-          // Message is passed in `item`.
-          $('#target').empty();
-          console.log(data);
-          for (const item of data.value) {
-            $('<li class="ms-ListItem is-selectable" tabindex="0">')
-              .attr({name: item.Id, id: item.Id})
-              .append($('<span class="ms-ListItem-secondaryText">').text(item.DisplayName))
-              .append('<div class="ms-ListItem-selectionTarget"></div>')
-              .appendTo('#target');
-          }
-          var ListItemElements = document.querySelectorAll(".ms-ListItem");
-          for (var i = 0; i < ListItemElements.length; i++) {
-            new fabric['ListItem'](ListItemElements[i]);
-          }
-        }).fail(function (error) {
-          // Handle error.
-          console.log(error);
-        });
-
-        $("#send-submit").on('click', saveEmailsInFolder);
-      });
-
-      // fetch all folders
 
       if (config) {
         showContacts();
@@ -83,103 +49,11 @@
 
     });
 
-    /**
-     * An event handler for save emails in the selected folders
-     * @param event
-     */
-    function saveEmailsInFolder(event) {
-      $(this).prop('disabled', true);
-      savingEmailInFolderInfo();
-      $('#folder-form li.is-selected').each((index, element) => {
-        let folderID = element.getAttribute('name');
-        let getMessageUrl = Office.context.mailbox.restUrl +
-          '/v2.0/me/MailFolders/' + folderID + '/messages?$expand=SingleValueExtendedProperties';
-        $.ajax({
-          url: getMessageUrl,
-          dataType: 'json',
-          headers: {'Authorization': 'Bearer ' + accessToken}
-        }).done(async function (data) {
-          console.log(data);
-          // Message is passed in `item`.
-          if (!data.value.length) return;
-          for (const email of data.value) {
-            if (email.Categories.includes('Saved in CiviCRM')) {
-              continue;
-            }
-            $.ajax({
-              url: Office.context.mailbox.restUrl + "/v2.0/me/messages/" + email.Id,
-              dataType: 'json',
-              contentType: 'application/json',
-              method: 'PATCH',
-              headers: {'Authorization': 'Bearer ' + accessToken},
-              data: JSON.stringify({
-                Categories: [
-                  "Saved in CiviCRM"
-                ]
-              })
-            }).done(result => {
-              console.log(result);
-            });
-            let emailAddresses = [];
-            ['From'].concat(['ToRecipients', 'CcRecipients', 'BccRecipients']).forEach(function (field) {
-              let recipients = field === 'From' ? (email.From ? [email.From] : []) : (email[field] || []);
-              recipients.forEach(function (recipient) {
-                if (recipient.EmailAddress && recipient.EmailAddress.Address) {
-                  emailAddresses.push(recipient.EmailAddress.Address);
-                }
-              });
-            });
-            let targetContactIds = await getContactIdsByEmail(emailAddresses);
-            await pushEmailActivity(email.Subject, email.Body.Content, new Date(), targetContactIds);
-          }
-          emailInFolderSavedInfo();
-        }).fail(function (error) {
-          // Handle error.
-          console.log(error);
-        });
-      });
-    }
-
-    function savingEmailInFolderInfo() {
-      $('#saving-email-notice').show();
-      $('#saved-email-notice').hide();
-    }
-
-    function emailInFolderSavedInfo() {
-      $('#saving-email-notice').hide();
-      $('#saved-email-notice').show();
-    }
-
     function formatDateTimeForCivi(date) {
       let hours = String(date.getHours()).padStart(2, "0");
       let minutes = String(date.getMinutes()).padStart(2, "0");
       let seconds = String(date.getSeconds()).padStart(2, "0");
       return date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate() + " " + hours + ":" + minutes + ":" + seconds;
-    }
-
-    /**
-     * Resolve a list of email addresses to CiviCRM contact IDs in a single API4 call,
-     * so the caller doesn't need to look up each contact separately.
-     */
-    async function getContactIdsByEmail(emailAddresses) {
-      let addresses = Array.from(new Set((emailAddresses || []).filter(Boolean)));
-      let contactIds = [];
-      if (!addresses.length) {
-        return contactIds;
-      }
-      await CiviCRM.api4(config, 'Email', 'get', {
-        select: ['contact_id'],
-        where: [['email', 'IN', addresses]],
-      }).done(function (result) {
-        (result.values || []).forEach(function (row) {
-          if (contactIds.indexOf(row.contact_id) === -1) {
-            contactIds.push(row.contact_id);
-          }
-        });
-      }).fail(function (error) {
-        console.log(error);
-      });
-      return contactIds;
     }
 
     async function pushEmailActivity(subject, body, date, targetContactIds) {
