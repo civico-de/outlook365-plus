@@ -212,7 +212,7 @@
         }
       };
       if (search) {
-        params.name = {"LIKE": '%' + search + '%'};
+        params.title = {"LIKE": '%' + search + '%'};
       }
       CiviCRM.api3(config, 'Group', 'get', params).done(addGroups);
     }
