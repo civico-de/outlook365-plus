@@ -51,8 +51,8 @@
       <button class="ms-Button ms-Button--small selectAll">
         <span class="ms-Button-label">{ts}Select All{/ts}</span>
       </button>
-      <button class="ms-Button ms-Button--small">
-        <span class="ms-Button-label unselectAll">{ts}Unselect All{/ts}</span>
+      <button class="ms-Button ms-Button--small unselectAll">
+        <span class="ms-Button-label">{ts}Unselect All{/ts}</span>
       </button>
     </div>
 

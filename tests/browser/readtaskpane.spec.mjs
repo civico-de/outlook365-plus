@@ -394,3 +394,29 @@ test("the command bar exposes its label and a settings button", async ({ page })
   await expect(page.locator(".pivot-tab i[aria-hidden='true']")).toHaveCount(2);
   h.assertNetwork(log, minted.token, key);
 });
+
+test("the rows, the save buttons and settings answer the keyboard alone", async ({ page }) => {
+  const log = await open(page, message(15));
+  await expect(rows(page)).toHaveCount(2);
+  const sender = page.getByRole("checkbox", { name: known.displayName, exact: true });
+  await h.tabTo(page, sender);
+  expect(await h.focusRing(page)).toBe(true);
+  await expect(sender).toBeChecked();
+  await page.keyboard.press(" ");
+  await expect(sender).not.toBeChecked();
+  await expect(rows(page).nth(0)).not.toHaveClass(/is-selected/);
+
+  await page.getByRole("button", { name: "Unselect All", exact: true }).press("Enter");
+  await expect(page.locator("#contacts .ms-ListItem.is-selected")).toHaveCount(0);
+  await page.getByRole("button", { name: "Select All", exact: true }).press("Enter");
+  await expect(page.locator("#contacts .ms-ListItem.is-selected")).toHaveCount(2);
+
+  const save = rows(page).nth(1).getByRole("button", { name: "Save Contact to CiviCRM" });
+  await save.press("Enter");
+  await expect(page.locator("#saved-contact-help-text")).toBeVisible();
+  expect(contactsWithEmail(newcomer(15).emailAddress)).toHaveLength(1);
+
+  await page.getByRole("button", { name: "Settings", exact: true }).press("Enter");
+  await expect(page.frameLocator("#office-dialog").locator("#civicrm-url")).toHaveValue(h.BASE_URL);
+  h.assertNetwork(log, minted.token, key);
+});

@@ -29,25 +29,31 @@
       $('#settings-icon').on('click', openSettingsDialog);
 
       $("body").delegate(".selectAll", "click", function (event) {
-        $(".ms-ListItem").addClass("is-selected")
+        setSelected($(".ms-ListItem-selectionTarget"), true)
       });
 
       $("body").delegate(".unselectAll", "click", function (event) {
-        $(".ms-ListItem").removeClass("is-selected")
+        setSelected($(".ms-ListItem-selectionTarget"), false)
+      });
+
+      $("body").delegate(".ms-ListItem-selectionTarget", "change", function () {
+        setSelected(this, $(this).prop('checked'));
       });
 
       $("body").delegate(".ms-ListItem", "click", function (event) {
-        if ($(event.target).closest('a, .ms-ListItem-action').length) {
+        if ($(event.target).closest('a, .ms-ListItem-action, .ms-ListItem-selectionTarget').length) {
           return;
         }
-        if ($(this).hasClass('is-selected')) {
-          $(this).removeClass('is-selected');
-        } else {
-          $(this).addClass('is-selected');
-        }
+        let box = $(this).children('.ms-ListItem-selectionTarget');
+        setSelected(box, !box.prop('checked'));
       });
 
     });
+
+    // The row's checkbox holds the selection; the class only mirrors it for Fabric's styling.
+    function setSelected(box, selected) {
+      $(box).prop('checked', selected).closest('.ms-ListItem').toggleClass('is-selected', selected);
+    }
 
     function formatDateTimeForCivi(date) {
       let hours = String(date.getHours()).padStart(2, "0");
@@ -124,17 +130,20 @@
         .attr({'data-civicrm-name': name, 'data-civicrm-email': item.emailAddress});
       if (known) {
         action.attr('data-civicrm-id', String(res['contact_id'])).append(
-          $('<a target="_blank">').attr('href', res.contact_url).append(
-            $('<i class="ms-Icon ms-Icon--Contact">').attr('title', UIText.ContactScreen.TitleURL)
+          $('<a target="_blank">').attr({'href': res.contact_url, 'title': UIText.ContactScreen.TitleURL}).append(
+            $('<i class="ms-Icon ms-Icon--Contact" aria-hidden="true">')
           )
         );
       } else {
         action.append(
-          $('<i class="ms-Icon ms-Icon--Save save-contact">').attr('title', UIText.SaveContactInGroupScreen.SaveContact)
+          $('<button type="button" class="icon-button save-contact">')
+            .attr('title', UIText.SaveContactInGroupScreen.SaveContact)
+            .append($('<i class="ms-Icon ms-Icon--Save" aria-hidden="true">'))
         );
       }
       return $('<li class="ms-ListItem is-selectable is-selected">')
         .addClass(known ? 'not_to_save' : 'to_save')
+        .append($('<input type="checkbox" class="ms-ListItem-selectionTarget" checked>').attr('aria-label', name))
         .append($('<span class="ms-ListItem-secondaryText">').text(name))
         .append($('<span class="ms-ListItem-tertiaryText">').text(item.emailAddress))
         .append($('<div class="ms-ListItem-actions">').append(action));
@@ -169,11 +178,12 @@
       return contact_id
     }
 
-    async function saveContact(event) {
+    async function saveContact() {
       $(this).prop('disabled', true);
       showSavingContactInfo();
-      let name = $(event.target).parent().attr('data-civicrm-name')
-      let email = $(event.target).parent().attr('data-civicrm-email');
+      let action = $(this).closest('.ms-ListItem-action');
+      let name = action.attr('data-civicrm-name')
+      let email = action.attr('data-civicrm-email');
       let contact = {name: name, email: email};
       let saved = await saveContactToCRM(contact);
       $(this).prop('disabled', false);

@@ -125,3 +125,24 @@ export const officeState = (page) =>
       window.__officeState;
     return { roaming, saved, dialogUrls, childMessages, recipients, categories, masterCategories };
   });
+
+/**
+ * Presses Tab until the locator holds the focus, and fails when it never does.
+ * Focus reached this way is keyboard focus, so :focus-visible applies.
+ */
+export async function tabTo(page, locator, max = 40) {
+  for (let i = 0; i < max; i += 1) {
+    await page.keyboard.press("Tab");
+    if (await locator.evaluate((el) => el === document.activeElement)) {
+      return i + 1;
+    }
+  }
+  throw new Error("not reachable with Tab");
+}
+
+// Whether the focused element draws a focus indicator.
+export const focusRing = (page) =>
+  page.evaluate(() => {
+    const el = document.activeElement;
+    return el.matches(":focus-visible") && getComputedStyle(el).outlineStyle !== "none";
+  });

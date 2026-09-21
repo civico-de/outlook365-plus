@@ -174,3 +174,38 @@ test("the tabs expose their labels and keep the selected state in sync", async (
   await expect(page.locator("#civicrm-error")).toHaveAttribute("role", "alert");
   h.assertNetwork(log, minted.token, key);
 });
+
+test("a group is expanded, selected and addressed from the keyboard alone", async ({ page }) => {
+  const log = await h.openPane(page, "taskpane.html", { item: compose, roaming: configured() });
+  await expect(page.locator("#contacts .ms-Persona").first()).toBeVisible();
+  await page.getByRole("tab", { name: "Groups", exact: true }).press("Enter");
+  await expect(page.locator("#groups .ms-Persona").first()).toBeVisible();
+  await page.locator("#searchField").fill(groupTitle);
+  await page.locator("#searchField").press("Enter");
+
+  const toggle = page.getByRole("button", { name: groupTitle, exact: true });
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await h.tabTo(page, toggle);
+  expect(await h.focusRing(page)).toBe(true);
+  await page.keyboard.press("Enter");
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
+
+  const member = page.getByRole("checkbox", { name: person.name, exact: true });
+  await expect(member).not.toBeChecked();
+  await member.press(" ");
+  await expect(member).toBeChecked();
+  await expect(member.locator("xpath=..")).toHaveClass(/is-selected/);
+  await page.getByRole("button", { name: "Unselect All", exact: true }).press("Enter");
+  await expect(member).not.toBeChecked();
+  await page.getByRole("button", { name: "Select All", exact: true }).press("Enter");
+  await expect(member).toBeChecked();
+
+  await page.getByRole("button", { name: "Cc", exact: true }).press("Enter");
+  await expect
+    .poll(async () => (await h.officeState(page)).recipients.cc)
+    .toEqual([{ displayName: person.name, emailAddress: person.email }]);
+  await toggle.press("Enter");
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await expect(page.locator("#groups .ms-ListItem")).toHaveCount(0);
+  h.assertNetwork(log, minted.token, key);
+});

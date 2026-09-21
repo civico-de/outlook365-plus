@@ -38,25 +38,31 @@
       $('[role="tab"]').on('click', handleTabChange);
     });
 
+    // The row's checkbox holds the selection; the class only mirrors it for Fabric's styling.
+    function setSelected(box, selected) {
+      $(box).prop('checked', selected).closest('.ms-ListItem').toggleClass('is-selected', selected);
+    }
+
+    $("body").delegate(".ms-ListItem-selectionTarget", "change", function () {
+      setSelected(this, $(this).prop('checked'));
+    });
+
     $("body").delegate(".ms-ListItem", "click", function (event) {
-      if ($(event.target).closest('a, .ms-ListItem-action').length) {
+      if ($(event.target).closest('a, .ms-ListItem-action, .ms-ListItem-selectionTarget').length) {
         return;
       }
-      if ($(this).hasClass('is-selected')) {
-        $(this).removeClass('is-selected');
-      } else {
-        $(this).addClass('is-selected');
-      }
+      let box = $(this).children('.ms-ListItem-selectionTarget');
+      setSelected(box, !box.prop('checked'));
     });
 
     $("body").delegate(".selectAll", "click", function (event) {
       let parentElement = $(event.target).closest(".allData").parent()
-      parentElement.children("ul").children(".ms-ListItem").addClass("is-selected")
+      setSelected(parentElement.children("ul").children(".ms-ListItem").children(".ms-ListItem-selectionTarget"), true)
     });
 
     $("body").delegate(".unselectAll", "click", function (event) {
       let parentElement = $(event.target).closest(".allData").parent()
-      parentElement.children("ul").children(".ms-ListItem").removeClass("is-selected")
+      setSelected(parentElement.children("ul").children(".ms-ListItem").children(".ms-ListItem-selectionTarget"), false)
     });
 
     $('#searchField').on("keypress", function (e) {
@@ -238,13 +244,17 @@
           var id = group.id;
           var groupURL = CRMGroupURL + '&id=' + id;
 
+          // Chevron and title are one control, so the keyboard reaches the group the mouse opens.
+          var toggle = $('<button type="button" class="group-toggle" aria-expanded="false">')
+            .attr('id', idname + '-expand-groups')
+            .append('<i class="ms-Icon ms-Icon--ChevronRight" style="padding: 6px" aria-hidden="true"></i>')
+            .append($('<span class="group-name">').text(name));
           var header = $('<div class="ms-Persona-primaryText CiviCRM-Group-Email">')
             .attr({'data-civicrm-id': id, 'data-civicrm-name': name})
-            .append($('<i class="ms-Icon ms-Icon--ChevronRight" style="padding: 6px"></i>').attr('id', idname + '-expand-groups'))
-            .append($('<span class="group-name">').text(name))
+            .append(toggle)
             .append($('<div class="ms-ListItem-actions">').append($('<div class="ms-ListItem-action">').append(
-              $('<a target="_blank">').attr('href', groupURL).append(
-                $('<i class="ms-Icon ms-Icon--Settings">').attr('title', UIText.GroupScreen.TitleURL)
+              $('<a target="_blank">').attr({'href': groupURL, 'title': UIText.GroupScreen.TitleURL}).append(
+                $('<i class="ms-Icon ms-Icon--Settings" aria-hidden="true">')
               )
             )));
           $('#groups').append(
@@ -252,9 +262,6 @@
           );
           $('#' + idname + '-expand-groups').on('click', expandGroups);
         }
-        $('.group-name').on('click', event => {
-          $(event.target).siblings('i').trigger('click');
-        });
 
         if (data.count < 25) {
           moreAvailable = false;
@@ -263,20 +270,24 @@
       }
     }
 
-    async function expandGroups(event) {
-      if ($(this).parent().hasClass("expanded")) {
-        let id = $(this).parent('.CiviCRM-Group-Email').data('civicrm-id');
-        $(this).parent().removeClass('expanded')
-        $(this).parent().children(".allData").remove()
-        $(this).parent().children(".CiviCRM-Group-Email").remove()
-        $(this).parent().children("#group_search_" + id).remove()
-        $(this).parent().children("ul").remove()
-        $(this).attr('class', 'ms-Icon ms-Icon--ChevronRight');
+    async function expandGroups() {
+      // The event target may be the toggle's icon or its label, so the header is read from the button.
+      let header = $(this).parent('.CiviCRM-Group-Email');
+      let chevron = $(this).children('i');
+      if (header.hasClass("expanded")) {
+        let id = header.data('civicrm-id');
+        header.removeClass('expanded')
+        header.children(".allData").remove()
+        header.children(".CiviCRM-Group-Email").remove()
+        header.children("#group_search_" + id).remove()
+        header.children("ul").remove()
+        chevron.attr('class', 'ms-Icon ms-Icon--ChevronRight');
+        $(this).attr('aria-expanded', 'false');
         return;
       }
-      $(this).parent().addClass('expanded')
-      let name = $(this).parent('.CiviCRM-Group-Email').attr('data-civicrm-name').replace(" ", "-").toLowerCase();
-      let id = $(this).parent('.CiviCRM-Group-Email').data('civicrm-id');
+      header.addClass('expanded')
+      let name = header.attr('data-civicrm-name').replace(" ", "-").toLowerCase();
+      let id = header.data('civicrm-id');
       // $(this).parent().append('<div id="' + name + '-expanded-groups"></div>');
       var params = {
         "sequential": 1,
@@ -290,16 +301,15 @@
       var buttons = '<button class="ms-Button ms-Button--small to"><span class="ms-Button-label">' + UIText.To + '</span></button>' +
         '<button class="ms-Button ms-Button--small cc"><span class="ms-Button-label">' + UIText.Cc + '</span></button>' +
         '<button class="ms-Button ms-Button--small bcc"><span class="ms-Button-label">' + UIText.Bcc + '</span></button>';
-      $(event.target).parent().append(
+      header.append(
         $('<div class="CiviCRM-Group-Email">').attr({'data-civicrm-id': id, 'data-civicrm-name': name}).append(buttons)
       );
-      $(event.target).parent().append('<div class="allData"><button class="ms-Button ms-Button--small selectAll"><span class="ms-Button-label">' + UIText.GroupScreen.SelectAll + '</span></button>' +
-        '<button class="ms-Button ms-Button--small"><span class="ms-Button-label unselectAll">' + UIText.GroupScreen.UnselectAll + '</span></button></div>')
-      $(event.target).parent().append(getSearchForm(id))
+      header.append('<div class="allData"><button class="ms-Button ms-Button--small selectAll"><span class="ms-Button-label">' + UIText.GroupScreen.SelectAll + '</span></button>' +
+        '<button class="ms-Button ms-Button--small unselectAll"><span class="ms-Button-label">' + UIText.GroupScreen.UnselectAll + '</span></button></div>')
+      header.append(getSearchForm(id))
       $("#group_search_" + id + " .ms-SearchBox-text").text(UIText.GroupScreen.SearchContact);
 
-      $(event.target).parent().append($('<ul class="ms-List">').addClass(id + '-list-email').append(members));
-      initListItems(members);
+      header.append($('<ul class="ms-List">').addClass(id + '-list-email').append(members));
       var SearchBoxElements = document.querySelectorAll(".ms-SearchBox");
       for (var i = 0; i < SearchBoxElements.length; i++) {
         new fabric['SearchBox'](SearchBoxElements[i]);
@@ -307,7 +317,8 @@
 
 
       // to get smoothness change class after query
-      $(this).attr('class', 'ms-Icon ms-Icon--ChevronDown');
+      chevron.attr('class', 'ms-Icon ms-Icon--ChevronDown');
+      $(this).attr('aria-expanded', 'true');
 
       $("#groups .ms-Button.to").click(function (event) {
         let toSend = []
@@ -363,7 +374,6 @@
           }
           let found = await getGroupContacts(params)
           $("." + id + '-list-email').empty().append(found)
-          initListItems(found);
           return false; // prevent the button click from happening
         }
       });
@@ -381,22 +391,16 @@
           contact_url += "&cid=" + String(contact.contact_id);
           items.push($('<li class="ms-ListItem is-selectable">')
             .attr({'data-civicrm-name': contact.display_name, 'data-civicrm-email': contact.email})
+            .append($('<input type="checkbox" class="ms-ListItem-selectionTarget">').attr('aria-label', contact.display_name))
             .append($('<span class="ms-ListItem-primaryText">').text(contact.display_name))
-            .append('<div class="ms-ListItem-selectionTarget"></div>')
             .append($('<div class="ms-ListItem-actions">').append($('<div class="ms-ListItem-action">').append(
-              $('<a target="_blank">').attr('href', contact_url).append(
-                $('<i class="ms-Icon ms-Icon--Contact">').attr('title', UIText.ContactScreen.TitleURL)
+              $('<a target="_blank">').attr({'href': contact_url, 'title': UIText.ContactScreen.TitleURL}).append(
+                $('<i class="ms-Icon ms-Icon--Contact" aria-hidden="true">')
               )
             ))));
         }
       }).catch(showError);
       return items;
-    }
-
-    function initListItems(items) {
-      items.forEach(function (item) {
-        new fabric['ListItem'](item[0]);
-      });
     }
 
     /**
