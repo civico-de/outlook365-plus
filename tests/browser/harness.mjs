@@ -73,6 +73,7 @@ export async function openPane(page, route, fixture, rest = () => ({ status: 404
     masterCategories: [],
     restUrl: REST_URL,
     callbackToken: "outlook-callback-token",
+    requirementSets: { DialogApi: "1.2" },
     ...fixture,
   });
   await page.context().route("**/*", (r) => {
@@ -130,7 +131,7 @@ export function assertNetwork(log, token, key) {
 // The serialisable part of the stub's state: what the add-in stored or sent to Outlook.
 export const officeState = (page) =>
   page.evaluate(() => {
-    const { roaming, saved, dialogUrls, recipients, categories, masterCategories } =
+    const { roaming, saved, dialogUrls, childMessages, recipients, categories, masterCategories } =
       window.__officeState;
-    return { roaming, saved, dialogUrls, recipients, categories, masterCategories };
+    return { roaming, saved, dialogUrls, childMessages, recipients, categories, masterCategories };
   });

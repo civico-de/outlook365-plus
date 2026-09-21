@@ -376,8 +376,12 @@
         console.log("None selected")
         return
       }
-      // A dialog can call no Office API but messageParent, so it cannot read the
-      // stored token; it gets the group list (ids and titles only) in its URL.
+      // The dialog cannot read the stored token; it gets the groups (ids and
+      // titles) through messageChild, which needs DialogApi 1.2.
+      if (!Office.context.requirements.isSetSupported('DialogApi', '1.2')) {
+        openDialog(dialogComponent);
+        return;
+      }
       var groups = await CiviCRM.api3(config, 'Group', 'get', {
         "sequential": 1,
         "return": ["id", "title"],
@@ -390,12 +394,15 @@
         return;
       }
       var dialogOptions = {width: 30, height: 40, displayInIframe: true};
-      var url = saveContactInGroupDialogUrl + '?groups=' + encodeURIComponent(JSON.stringify(groups));
-      Office.context.ui.displayDialogAsync(url, dialogOptions, async function (result) {
+      Office.context.ui.displayDialogAsync(saveContactInGroupDialogUrl, dialogOptions, async function (result) {
         var confirmDialog = result.value;
         confirmDialog.addEventHandler(Microsoft.Office.WebExtension.EventType.DialogMessageReceived, async function (message) {
           let groupInfo = JSON.parse(message.message);
-          console.log(groupInfo)
+          // The dialog reports ready once it listens for the group list.
+          if (groupInfo['ready'] === true) {
+            confirmDialog.messageChild(JSON.stringify(groups));
+            return;
+          }
           var groupId
           var groupResult
           if (groupInfo['exist'] === true) {

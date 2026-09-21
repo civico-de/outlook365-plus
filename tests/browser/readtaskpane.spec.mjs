@@ -166,6 +166,80 @@ test("a scope without edit groups shows an error instead of a silent success", a
   h.assertNetwork(log, minted.token, key);
 });
 
+test.describe("a site with hundreds of groups", () => {
+  const COUNT = 400;
+  const prefix = `Example bulk group ${run}`;
+  const title = (i) =>
+    `${prefix} ${String(i).padStart(3, "0")} with a deliberately long title that fills the list well past one line`;
+  let groupIds;
+
+  test.beforeAll(() => {
+    const records = Array.from({ length: COUNT }, (_, i) => ({ title: title(i) }));
+    groupIds = h.cv("Group.save", { records }).map((g) => g.id);
+  });
+  test.afterAll(() => h.cv("Group.delete", { where: [["title", "LIKE", `${prefix} %`]] }));
+
+  test("the dialog lists every group and adds the contacts to one", async ({ page }) => {
+    const withGroups = h.mintToken(subject, [...SCOPE, "edit groups"]);
+    const log = await h.openPane(page, "readtaskpane.html", {
+      item: message(8),
+      roaming: { civicrm_url: h.BASE_URL, civicrm_token: withGroups.token },
+    });
+    await expect(rows(page)).toHaveCount(2);
+    await page.locator(".save-contact-all-group").click();
+    const dialog = page.frameLocator("#office-dialog");
+    const seeded = dialog.locator(".ms-Dropdown-item", { hasText: prefix });
+    await expect(seeded).toHaveCount(COUNT);
+    await expect(dialog.locator(".group-select-dropdown option", { hasText: prefix })).toHaveCount(
+      COUNT,
+    );
+
+    const target = COUNT - 1;
+    await dialog.locator(".ms-Dropdown > .ms-Dropdown-title:not(.ms-Dropdown-truncator)").click();
+    await dialog.locator(".ms-Dropdown-item", { hasText: title(target) }).click();
+    await expect(dialog.locator(".group-select-dropdown")).toHaveValue(String(groupIds[target]));
+    // Read before Done: the pane reloads once everything is saved.
+    const state = await h.officeState(page);
+    expect(state.dialogUrls).toHaveLength(1);
+    expect(new URL(state.dialogUrls[0]).search).toBe("");
+    // One messageChild, larger than the request line a web server accepts.
+    expect(state.childMessages).toHaveLength(1);
+    expect(state.childMessages[0]).toBeGreaterThan(8192);
+    await dialog.locator("#group-select-done").click();
+    await expect(page.locator("#office-dialog")).toHaveCount(0);
+    await expect(rows(page).nth(1)).toHaveClass(/not_to_save/);
+
+    const [created] = contactsWithEmail(newcomer(8).emailAddress);
+    const members = h
+      .sql(`SELECT contact_id FROM civicrm_group_contact
+        WHERE group_id = ${Number(groupIds[target])} AND status = 'Added' ORDER BY contact_id`)
+      .split("\n")
+      .map(Number);
+    expect(members).toEqual([knownId, created].sort((a, b) => a - b));
+    // No group was created on the way.
+    expect(h.sql(`SELECT COUNT(*) FROM civicrm_group WHERE title LIKE '${prefix} %'`)).toBe(
+      String(COUNT),
+    );
+    h.assertNetwork(log, withGroups.token, key);
+    h.revokeToken(withGroups.id);
+  });
+});
+
+test("a client without DialogApi 1.2 shows an error instead of an empty group list", async ({
+  page,
+}) => {
+  const log = await h.openPane(page, "readtaskpane.html", {
+    item: message(9),
+    roaming: { civicrm_url: h.BASE_URL, civicrm_token: minted.token },
+    requirementSets: { DialogApi: "1.1" },
+  });
+  await expect(rows(page)).toHaveCount(2);
+  await page.locator(".save-contact-all-group").click();
+  await expect(page.locator(".ms-Dialog")).toBeVisible();
+  expect((await h.officeState(page)).dialogUrls).toEqual([]);
+  h.assertNetwork(log, minted.token, key);
+});
+
 test("saves a mail folder through the Outlook REST API", async ({ page }) => {
   const mail = {
     Id: "m1",

@@ -23,6 +23,13 @@ export function officeStub(fixture) {
       displayLanguage: fixture.language,
       ui: strict("ui", {
         messageParent: (message) => top.__officeState.deliver(message),
+        addHandlerAsync: (type, handler, cb) => {
+          if (type !== "dialogParentMessageReceived") {
+            throw new Error(`office stub: dialog handler for ${type} is not modelled`);
+          }
+          top.__officeState.dialog.childHandler = handler;
+          cb(done());
+        },
       }),
       requirements: strict("requirements", { isSetSupported: () => true }),
     });
@@ -31,6 +38,7 @@ export function officeStub(fixture) {
       roaming: { ...fixture.roaming },
       saved: null,
       dialogUrls: [],
+      childMessages: [],
       recipients: { to: [], cc: [], bcc: [] },
       categories: [...fixture.categories],
       masterCategories: [...fixture.masterCategories],
@@ -78,8 +86,19 @@ export function officeStub(fixture) {
             }),
           });
 
+    // Only the requirement sets the fixture names are modelled.
+    const isSetSupported = (name, version) => {
+      if (!(name in fixture.requirementSets)) {
+        throw new Error(`office stub: requirement set ${name} is not modelled`);
+      }
+      const [major, minor] = fixture.requirementSets[name].split(".").map(Number);
+      const [wantMajor, wantMinor] = version.split(".").map(Number);
+      return major > wantMajor || (major === wantMajor && minor >= wantMinor);
+    };
+
     context = strict("context", {
       displayLanguage: fixture.language,
+      requirements: strict("requirements", { isSetSupported }),
       roamingSettings: strict("roamingSettings", {
         get: (key) => state.roaming[key],
         set: (key, value) => {
@@ -113,12 +132,20 @@ export function officeStub(fixture) {
           frame.style.cssText =
             "position:fixed;inset:0;width:100%;height:100%;background:#fff;border:0;z-index:99999";
           document.body.appendChild(frame);
-          state.dialog = { frame, handler: null };
+          state.dialog = { frame, handler: null, childHandler: null };
           cb(
             done(
               strict("dialog", {
                 addEventHandler: (type, handler) => {
                   state.dialog.handler = handler;
+                },
+                // Real Office drops a message the dialog is not yet listening for.
+                messageChild: (text) => {
+                  if (!state.dialog.childHandler) {
+                    throw new Error("office stub: messageChild before the dialog listens");
+                  }
+                  state.childMessages.push(text.length);
+                  state.dialog.childHandler({ message: text, origin: location.origin });
                 },
                 close: () => {
                   frame.remove();
@@ -134,6 +161,7 @@ export function officeStub(fixture) {
 
   const office = {
     context,
+    EventType: strict("EventType", { DialogParentMessageReceived: "dialogParentMessageReceived" }),
     AsyncResultStatus: strict("AsyncResultStatus", { Succeeded: "succeeded", Failed: "failed" }),
     MailboxEnums: strict("MailboxEnums", {
       CategoryColor: strict("CategoryColor", { Preset0: "preset0" }),
