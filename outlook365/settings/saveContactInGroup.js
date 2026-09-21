@@ -1,4 +1,3 @@
-// ck-allow-api3 -- upstream's APIv3 call sites, routed through assets/civicrm.js; migrating them belongs upstream
 (function () {
   'use strict';
 
@@ -7,14 +6,11 @@
 
     var myLanguage = Office.context.displayLanguage;
     var UIText = UIStrings.getLocaleStrings(myLanguage);
-    var config = null;
-
     jQuery(document).ready(async function () {
       $('h1.title').text(UIText.SaveContactInGroupScreen.Title);
       $('.not-configured-warning .ms-MessageBar-text').html(UIText.SettingsScreen.NotConfigured);
       $('#group-select-done .ms-Button-label').text(UIText.SaveContactInGroupScreen.Done);
-      config = await getConfig();
-      await getGroups(config)
+      addGroups(JSON.parse(getParameterByName('groups')) || []);
 
 
       var DropdownHTMLElements = document.querySelectorAll('.ms-Dropdown');
@@ -47,23 +43,11 @@
     });
   };
 
-  async function getGroups(config) {
-    await CiviCRM.api3(config, 'Group', 'get', {
-      "sequential": 1,
-      "return": ["id", "title"],
-      "is_active": '1',
-      "is_hidden": '0',
-      "options": {
-        "limit": 0,
-      }
-    }).done(addGroups);
-  }
-
-  function addGroups(data) {
-    console.log(data)
-    for (var key in data['values']) {
-      $('.group-select-dropdown').append('<option value="' + data['values'][key]["id"] + '">' + data['values'][key]['title'] + '</option>');
-    }
+  // [[id, title], ...] as the task pane passed it.
+  function addGroups(groups) {
+    groups.forEach(function (group) {
+      $('.group-select-dropdown').append($('<option>').val(group[0]).text(group[1]));
+    });
   }
 
   function done() {
@@ -90,16 +74,5 @@
     if (!results) return null;
     if (!results[2]) return '';
     return decodeURIComponent(results[2].replace(/\+/g, " "));
-  }
-
-  function getConfig() {
-    var config = {};
-
-    config.url = (Office.context.roamingSettings.get('civicrm_url') || '').replace(/\/+$/, '');
-    config.token = Office.context.roamingSettings.get('civicrm_token');
-    if (config.url && config.token) {
-      return config;
-    }
-    return null;
   }
 })();
