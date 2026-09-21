@@ -352,3 +352,33 @@ test("a failed contact save stops saving the mail: no activity, no tag", async (
   h.assertNetwork(log, noAdd.token, key);
   h.revokeToken(noAdd.id);
 });
+
+test("names from the mail, from Outlook and from CiviCRM render as text", async ({ page }) => {
+  const sender = { displayName: `${MARKUP} Sender ${run}`, emailAddress: `sender.${run}@example.org` };
+  const marked = { displayName: "Marked", emailAddress: `marked.${run}@example.org` };
+  const [{ id: markedId }] = h.cv("Contact.create", {
+    values: { contact_type: "Individual", first_name: MARKUP, last_name: `Marked ${run}` },
+  });
+  h.cv("Email.create", { values: { contact_id: markedId, email: marked.emailAddress } });
+  const folder = { Id: 'f"2', DisplayName: `${MARKUP} Folder ${run}` };
+  const log = await open(page, message(12, { from: sender, to: [marked] }), (request) => ({
+    json: { value: request.url().endsWith("/v2.0/me/MailFolders") ? [folder] : [] },
+  }));
+  await expect(rows(page)).toHaveCount(2);
+  await expect(rows(page).nth(0).locator(".ms-ListItem-secondaryText")).toHaveText(
+    sender.displayName,
+  );
+  await expect(rows(page).nth(0).locator(".ms-ListItem-action")).toHaveAttribute(
+    "data-civicrm-name",
+    sender.displayName,
+  );
+  await expect(rows(page).nth(1).locator(".ms-ListItem-secondaryText")).toHaveText(
+    `${MARKUP} Marked ${run}`,
+  );
+  const folderItem = page.locator("#target .ms-ListItem");
+  await expect(folderItem).toHaveText(folder.DisplayName);
+  await expect(folderItem).toHaveAttribute("name", folder.Id);
+  await expect(page.locator("#contacts img, #target img")).toHaveCount(0);
+  expect(await page.evaluate(() => window.__xss)).toBeUndefined();
+  h.assertNetwork(log, minted.token, key);
+});

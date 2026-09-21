@@ -34,11 +34,11 @@
           $('#target').empty();
           console.log(data);
           for (const item of data.value) {
-            let html = $(`<li class="ms-ListItem is-selectable" name="${item.Id}" id="${item.Id}" tabindex="0">` +
-              `<span class="ms-ListItem-secondaryText">${item.DisplayName}</span>` +
-              '<div class="ms-ListItem-selectionTarget"></div>' +
-              '</li>');
-            html.appendTo('#target');
+            $('<li class="ms-ListItem is-selectable" tabindex="0">')
+              .attr({name: item.Id, id: item.Id})
+              .append($('<span class="ms-ListItem-secondaryText">').text(item.DisplayName))
+              .append('<div class="ms-ListItem-selectionTarget"></div>')
+              .appendTo('#target');
           }
           var ListItemElements = document.querySelectorAll(".ms-ListItem");
           for (var i = 0; i < ListItemElements.length; i++) {
@@ -242,41 +242,28 @@
       });
     }
 
-    async function getListItem(item, res) {
-      let html = ''
-      let name
-      let class_to_add
-      let contact_id
-      if (res['exist']) {
-        name = res['contact_name']
-        class_to_add = "not_to_save"
-        contact_id = res['contact_id']
+    // Names come from the mail's sender and from CiviCRM, so they only ever go in as text.
+    function getListItem(item, res) {
+      let known = res['exist'];
+      let name = known ? res['contact_name'] : item.displayName;
+      let action = $('<div class="ms-ListItem-action">')
+        .attr({'data-civicrm-name': name, 'data-civicrm-email': item.emailAddress});
+      if (known) {
+        action.attr('data-civicrm-id', String(res['contact_id'])).append(
+          $('<a target="_blank">').attr('href', res.contact_url).append(
+            $('<i class="ms-Icon ms-Icon--Contact">').attr('title', UIText.ContactScreen.TitleURL)
+          )
+        );
       } else {
-        name = item.displayName
-        class_to_add = "to_save"
+        action.append(
+          $('<i class="ms-Icon ms-Icon--Save save-contact">').attr('title', UIText.SaveContactInGroupScreen.SaveContact)
+        );
       }
-      html += '<li class="ms-ListItem is-selectable is-selected ' + class_to_add + '">' +
-        '<span class="ms-ListItem-secondaryText">' + name + '</span>' +
-        '<span class="ms-ListItem-tertiaryText">' + item.emailAddress + '</span>' +
-        '<div class="ms-ListItem-actions">' +
-        '<div class="ms-ListItem-action" data-civicrm-name="' + name + '" data-civicrm-email="' + item.emailAddress + '"'
-
-      if (res['exist']) {
-        html += ' data-civicrm-id="' + String(contact_id) + '">'
-      } else {
-        html += '>';
-      }
-
-      if (res['exist']) {
-        html += '<a href="' + res.contact_url + '" target="_blank"><i class="ms-Icon ms-Icon--Contact" title="' + UIText.ContactScreen.TitleURL + '"></i></a>'
-      } else {
-        html += '<i class="ms-Icon ms-Icon--Save save-contact" title="' + UIText.SaveContactInGroupScreen.SaveContact + '"></i>'
-      }
-
-      html += '</div>' +
-        '</div>' +
-        '</li>'
-      return html
+      return $('<li class="ms-ListItem is-selectable is-selected">')
+        .addClass(known ? 'not_to_save' : 'to_save')
+        .append($('<span class="ms-ListItem-secondaryText">').text(name))
+        .append($('<span class="ms-ListItem-tertiaryText">').text(item.emailAddress))
+        .append($('<div class="ms-ListItem-actions">').append(action));
     }
 
     async function saveContactToCRM(contact) {
@@ -311,8 +298,8 @@
     async function saveContact(event) {
       $(this).prop('disabled', true);
       showSavingContactInfo();
-      let name = $(event.target).parent().data('civicrm-name')
-      let email = $(event.target).parent().data('civicrm-email');
+      let name = $(event.target).parent().attr('data-civicrm-name')
+      let email = $(event.target).parent().attr('data-civicrm-email');
       let contact = {name: name, email: email};
       let saved = await saveContactToCRM(contact);
       $(this).prop('disabled', false);
@@ -357,7 +344,7 @@
       $('.ms-List').children().each(function (index) {
         if ($(this).hasClass('to_save') && $(this).hasClass('is-selected')) {
           let contact = $(this).children(".ms-ListItem-actions").children(".ms-ListItem-action")
-          toSave.push([contact.data('civicrm-name'), contact.data('civicrm-email')])
+          toSave.push([contact.attr('data-civicrm-name'), contact.attr('data-civicrm-email')])
         }
       });
 
@@ -376,9 +363,9 @@
         // name,email,already saved
         if ($(this).hasClass('is-selected')) {
           if ($(this).hasClass('to_save')) {
-            toSave.push([contact.data('civicrm-name'), contact.data('civicrm-email'), $(this).hasClass('to_save')])
+            toSave.push([contact.attr('data-civicrm-name'), contact.attr('data-civicrm-email'), $(this).hasClass('to_save')])
           } else {
-            toSave.push([contact.data('civicrm-name'), contact.data('civicrm-email'), $(this).hasClass('to_save'), contact.data('civicrm-id')])
+            toSave.push([contact.attr('data-civicrm-name'), contact.attr('data-civicrm-email'), $(this).hasClass('to_save'), contact.data('civicrm-id')])
           }
         }
       });
@@ -497,7 +484,7 @@
 
     async function showContacts() {
 
-      let html = '<ul class="ms-List">'
+      let list = $('<ul class="ms-List">');
 
       // Sender, then To, Cc and Bcc. A lookup that failed has shown the error
       // dialog; listing its address as unknown would invite a duplicate.
@@ -507,11 +494,10 @@
         if (!res) {
           return;
         }
-        html += await getListItem(val, res)
+        list.append(getListItem(val, res));
       }
-      html += '</ul>'
 
-      html += '<button class="ms-Button ms-Button--small save-contact-all">' +
+      let html = '<button class="ms-Button ms-Button--small save-contact-all">' +
         '<span class="ms-Button-label">' + UIText.SaveContactInGroupScreen.Save + '</span>' +
         '</button>'
       html += '<button class="ms-Button ms-Button--small save-contact-all-group">' +
@@ -523,7 +509,7 @@
       html += '<br><br>';
 
 
-      $("#contacts").html(html)
+      $("#contacts").empty().append(list, html)
       $(".save-contact").on('click', saveContact)
       $(".save-contact-all-group").on('click', confirmSaveAllContactInGroup)
       $(".save-contact-all").on('click', confirmSaveAllContact)
@@ -547,7 +533,7 @@
              if ($(this).hasClass('is-selected')) {
                if ($(this).hasClass('to_save')) {
                  pendingContacts.push(
-                   saveContactToCRM({"name": contact.data('civicrm-name'), "email": contact.data('civicrm-email')})
+                   saveContactToCRM({"name": contact.attr('data-civicrm-name'), "email": contact.attr('data-civicrm-email')})
                  );
                } else {
                  targetContactIds.push(contact.data('civicrm-id'));

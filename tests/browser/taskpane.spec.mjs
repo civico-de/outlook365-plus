@@ -16,6 +16,8 @@ const run = `pw${Date.now().toString(36)}`;
 const person = { name: `Alex Example ${run}`, email: `alex.${run}@example.org` };
 const groupTitle = `Example group ${run}`;
 const compose = { mode: "compose" };
+const MARKUP = '<img src=x onerror="window.__xss=1">';
+const marked = { name: `${MARKUP} Marked ${run}`, email: `marked.${run}@example.org` };
 
 let subject;
 let key;
@@ -33,6 +35,16 @@ test.beforeAll(() => {
   });
   const [group] = h.cv("Group.create", { values: { title: groupTitle } });
   h.cv("GroupContact.create", { values: { group_id: group.id, contact_id: contact.id } });
+  const [markedContact] = h.cv("Contact.create", {
+    values: { contact_type: "Individual", first_name: MARKUP, last_name: `Marked ${run}` },
+  });
+  h.cv("Email.create", {
+    values: { contact_id: markedContact.id, email: marked.email, is_primary: true },
+  });
+  const [markedGroup] = h.cv("Group.create", { values: { title: marked.name } });
+  h.cv("GroupContact.create", {
+    values: { group_id: markedGroup.id, contact_id: markedContact.id },
+  });
   minted = h.mintToken(subject, SCOPE);
 });
 
@@ -42,7 +54,7 @@ test("lists contacts, finds one by name and adds it as a recipient", async ({ pa
   const log = await h.openPane(page, "taskpane.html", { item: compose, roaming: configured() });
   await expect(page.locator("#contacts .ms-Persona").first()).toBeVisible();
 
-  await page.locator("#searchField").fill(run);
+  await page.locator("#searchField").fill(`Example ${run}`);
   await page.locator("#searchField").press("Enter");
   const found = page.locator("#contacts .ms-Persona");
   await expect(found).toHaveCount(1);
@@ -102,4 +114,38 @@ test("a revoked token shows an error instead of an empty list", async ({ page })
   await expect(page.locator("#civicrm-error")).toBeVisible();
   await expect(page.locator("#contacts .ms-Persona")).toHaveCount(0);
   h.assertNetwork(log, revoked.token, key);
+});
+
+test("contact names and group titles from CiviCRM render as text", async ({ page }) => {
+  const log = await h.openPane(page, "taskpane.html", { item: compose, roaming: configured() });
+  await expect(page.locator("#contacts .ms-Persona").first()).toBeVisible();
+  await page.locator("#searchField").fill(`Marked ${run}`);
+  await page.locator("#searchField").press("Enter");
+  const found = page.locator("#contacts .ms-Persona");
+  await expect(found).toHaveCount(1);
+  await expect(found.locator(".ms-Persona-primaryText")).toHaveText(marked.name);
+  await found.getByRole("button", { name: "To", exact: true }).click();
+  await expect
+    .poll(async () => (await h.officeState(page)).recipients.to)
+    .toEqual([{ displayName: marked.name, emailAddress: marked.email }]);
+
+  await page.locator(".ms-CommandButton--pivot .groups").click();
+  await expect(page.locator("#groups .ms-Persona").first()).toBeVisible();
+  await page.locator("#searchField").fill(`Marked ${run}`);
+  await page.locator("#searchField").press("Enter");
+  const group = page.locator("#groups .ms-Persona");
+  await expect(group).toHaveCount(1);
+  await expect(group.locator(".group-name")).toHaveText(marked.name);
+  await group.locator(".group-name").click();
+  const members = group.locator(".ms-ListItem");
+  await expect(members).toHaveCount(1);
+  await expect(members).toHaveText(marked.name);
+  await group.getByRole("button", { name: "Select All", exact: true }).click();
+  await group.getByRole("button", { name: "Cc", exact: true }).click();
+  await expect
+    .poll(async () => (await h.officeState(page)).recipients.cc)
+    .toEqual([{ displayName: marked.name, emailAddress: marked.email }]);
+  await expect(page.locator("#contacts img, #groups img")).toHaveCount(0);
+  expect(await page.evaluate(() => window.__xss)).toBeUndefined();
+  h.assertNetwork(log, minted.token, key);
 });

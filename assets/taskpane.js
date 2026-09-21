@@ -241,23 +241,18 @@
           var id = group.id;
           var groupURL = CRMGroupURL + '&id=' + id;
 
-          var html = '' +
-            '<div class="ms-Persona">' +
-            '<div class="ms-Persona-details">' +
-            '<div class="ms-Persona-primaryText CiviCRM-Group-Email"  data-civicrm-id="' + id + '" data-civicrm-name="' + name + '">' +
-            '<i class="ms-Icon ms-Icon--ChevronRight" id="' +
-            idname +
-            '-expand-groups" style="padding: 6px"></i>' +
-            '<span class="group-name">' +
-            name +
-            '</span>' +
-            '<div class="ms-ListItem-actions"><div class="ms-ListItem-action">' +
-            '<a href="' + groupURL + '" target="_blank"><i class="ms-Icon ms-Icon--Settings" title="' + UIText.GroupScreen.TitleURL + '"></i></a>' +
-            '</div></div>' +
-            '</div>' +
-            '</div>' +
-            '</div>';
-          $('#groups').append(html);
+          var header = $('<div class="ms-Persona-primaryText CiviCRM-Group-Email">')
+            .attr({'data-civicrm-id': id, 'data-civicrm-name': name})
+            .append($('<i class="ms-Icon ms-Icon--ChevronRight" style="padding: 6px"></i>').attr('id', idname + '-expand-groups'))
+            .append($('<span class="group-name">').text(name))
+            .append($('<div class="ms-ListItem-actions">').append($('<div class="ms-ListItem-action">').append(
+              $('<a target="_blank">').attr('href', groupURL).append(
+                $('<i class="ms-Icon ms-Icon--Settings">').attr('title', UIText.GroupScreen.TitleURL)
+              )
+            )));
+          $('#groups').append(
+            $('<div class="ms-Persona">').append($('<div class="ms-Persona-details">').append(header))
+          );
           $('#' + idname + '-expand-groups').on('click', expandGroups);
         }
         $('.group-name').on('click', event => {
@@ -283,7 +278,7 @@
         return;
       }
       $(this).parent().addClass('expanded')
-      let name = $(this).parent('.CiviCRM-Group-Email').data('civicrm-name').replace(" ", "-").toLowerCase();
+      let name = $(this).parent('.CiviCRM-Group-Email').attr('data-civicrm-name').replace(" ", "-").toLowerCase();
       let id = $(this).parent('.CiviCRM-Group-Email').data('civicrm-id');
       // $(this).parent().append('<div id="' + name + '-expanded-groups"></div>');
       var params = {
@@ -293,19 +288,21 @@
         },
         "group_id": id,
       };
-      let html = await getGroupContacts(params)
+      let members = await getGroupContacts(params)
 
       var buttons = '<button class="ms-Button ms-Button--small to"><span class="ms-Button-label">' + UIText.To + '</span></button>' +
         '<button class="ms-Button ms-Button--small cc"><span class="ms-Button-label">' + UIText.Cc + '</span></button>' +
         '<button class="ms-Button ms-Button--small bcc"><span class="ms-Button-label">' + UIText.Bcc + '</span></button>';
-      buttons = '<div class="CiviCRM-Group-Email" data-civicrm-id="' + id + '" data-civicrm-name="' + name + '">' + buttons + '</div>';
-      $(event.target).parent().append(buttons);
+      $(event.target).parent().append(
+        $('<div class="CiviCRM-Group-Email">').attr({'data-civicrm-id': id, 'data-civicrm-name': name}).append(buttons)
+      );
       $(event.target).parent().append('<div class="allData"><button class="ms-Button ms-Button--small selectAll"><span class="ms-Button-label">' + UIText.GroupScreen.SelectAll + '</span></button>' +
         '<button class="ms-Button ms-Button--small"><span class="ms-Button-label unselectAll">' + UIText.GroupScreen.UnselectAll + '</span></button></div>')
       $(event.target).parent().append(getSearchForm(id))
       $("#group_search_" + id + " .ms-SearchBox-text").text(UIText.GroupScreen.SearchContact);
 
-      $(event.target).parent().append('<ul class="ms-List ' + id + '-list-email">' + html + '</ul>')
+      $(event.target).parent().append($('<ul class="ms-List">').addClass(id + '-list-email').append(members));
+      initListItems(members);
       var SearchBoxElements = document.querySelectorAll(".ms-SearchBox");
       for (var i = 0; i < SearchBoxElements.length; i++) {
         new fabric['SearchBox'](SearchBoxElements[i]);
@@ -321,7 +318,7 @@
         $('.' + id + '-list-email').children().each(function (index) {
           if ($(this).hasClass('is-selected')) {
             let contact = $(this)
-            toSend.push([contact.data('civicrm-name'), contact.data('civicrm-email')])
+            toSend.push([contact.attr('data-civicrm-name'), contact.attr('data-civicrm-email')])
           }
 
         });
@@ -336,7 +333,7 @@
         $('.' + id + '-list-email').children().each(function (index) {
           if ($(this).hasClass('is-selected')) {
             let contact = $(this)
-            toSend.push([contact.data('civicrm-name'), contact.data('civicrm-email')])
+            toSend.push([contact.attr('data-civicrm-name'), contact.attr('data-civicrm-email')])
           }
 
         });
@@ -351,7 +348,7 @@
         $('.' + id + '-list-email').children().each(function (index) {
           if ($(this).hasClass('is-selected')) {
             let contact = $(this)
-            toSend.push([contact.data('civicrm-name'), contact.data('civicrm-email')])
+            toSend.push([contact.attr('data-civicrm-name'), contact.attr('data-civicrm-email')])
           }
 
         });
@@ -367,39 +364,42 @@
           if (groupSearchVal != '') {
             params.display_name = {"LIKE": '%' + groupSearchVal + '%'};
           }
-          let newHtml = await getGroupContacts(params)
-          $("." + id + '-list-email').html(newHtml)
-          console.log(newHtml)
+          let found = await getGroupContacts(params)
+          $("." + id + '-list-email').empty().append(found)
+          initListItems(found);
           return false; // prevent the button click from happening
         }
       });
     }
 
+    /**
+     * The group's members as list items; names and addresses go in as text.
+     */
     async function getGroupContacts(params) {
-      var html = '';
+      var items = [];
       await CiviCRM.api3(config, 'Outlook365Group', 'get', params).done(function (data) {
         for (var i in data.values) {
           var contact = data.values[i];
           var contact_url = CRMContactURL;
           contact_url += "&cid=" + String(contact.contact_id);
-          html += '<li class="ms-ListItem is-selectable" data-civicrm-name="' + contact.display_name +
-            '" data-civicrm-email="' + contact.email + '">' +
-            '<span class=""ms-ListItem-primaryText">' + contact.display_name + '</span>' +
-            '<div class="ms-ListItem-selectionTarget"></div>' +
-            '<div class="ms-ListItem-actions"><div class="ms-ListItem-action">' +
-            '<a href="' + contact_url + '" target="_blank"><i class="ms-Icon ms-Icon--Contact" title="' + UIText.ContactScreen.TitleURL + '"></i></a>' +
-            '</div></div>' +
-            '</li>';
-          // break
+          items.push($('<li class="ms-ListItem is-selectable">')
+            .attr({'data-civicrm-name': contact.display_name, 'data-civicrm-email': contact.email})
+            .append($('<span class="ms-ListItem-primaryText">').text(contact.display_name))
+            .append('<div class="ms-ListItem-selectionTarget"></div>')
+            .append($('<div class="ms-ListItem-actions">').append($('<div class="ms-ListItem-action">').append(
+              $('<a target="_blank">').attr('href', contact_url).append(
+                $('<i class="ms-Icon ms-Icon--Contact">').attr('title', UIText.ContactScreen.TitleURL)
+              )
+            ))));
         }
       }).catch(showError);
-      html += '<script type="text/javascript">\n' +
-        '  var ListItemElements = document.querySelectorAll(".ms-ListItem");\n' +
-        '  for (var i = 0; i < ListItemElements.length; i++) {\n' +
-        '    new fabric[\'ListItem\'](ListItemElements[i]);\n' +
-        '  }\n' +
-        '</script>';
-      return html
+      return items;
+    }
+
+    function initListItems(items) {
+      items.forEach(function (item) {
+        new fabric['ListItem'](item[0]);
+      });
     }
 
     async function checkContact(val) {
@@ -461,57 +461,48 @@
         for (var i in data.values) {
           currentOffset++;
           var contact = data.values[i];
-          var name = contact.display_name;
-          var email = '';
-          var buttons = '';
+          var details = $('<div class="ms-Persona-details">')
+            .append($('<div class="ms-Persona-primaryText">').text(contact.display_name))
+            .append($('<div class="ms-ListItem-actions search-contact-profile">').append($('<div class="ms-ListItem-action">').append(
+              $('<a target="_blank">').attr('href', CRMContactURL + "&cid=" + String(contact.contact_id)).append(
+                $('<i class="ms-Icon ms-Icon--Contact">').attr('title', UIText.ContactScreen.TitleURL)
+              )
+            )))
+            .append('<div class="ms-Persona-secondaryText"></div>');
+          for (var fieldI in fields) {
+            var value = contact[fields[fieldI].name];
+            if (value) {
+              details.append($('<div class="ms-Persona-secondaryText">')
+                .append($('<strong>').text(fields[fieldI].title + ':'), '&nbsp;', document.createTextNode(value)));
+            }
+          }
           if (contact.email) {
-            buttons =
-              '<button class="ms-Button ms-Button--small to"><span class="ms-Button-label">' + UIText.To + '</span></button>' +
-              '<button class="ms-Button ms-Button--small cc"><span class="ms-Button-label">' + UIText.Cc + '</span></button>' +
-              '<button class="ms-Button ms-Button--small bcc"><span class="ms-Button-label">' + UIText.Bcc + '</span></button>';
-            buttons = '<div class="CiviCRM-Email" data-civicrm-name="' + contact.display_name + '" data-civicrm-email="' + contact.email + '">' + buttons + '</div>';
+            details.append($('<div class="CiviCRM-Email">')
+              .attr({'data-civicrm-name': contact.display_name, 'data-civicrm-email': contact.email})
+              .append(
+                '<button class="ms-Button ms-Button--small to"><span class="ms-Button-label">' + UIText.To + '</span></button>' +
+                '<button class="ms-Button ms-Button--small cc"><span class="ms-Button-label">' + UIText.Cc + '</span></button>' +
+                '<button class="ms-Button ms-Button--small bcc"><span class="ms-Button-label">' + UIText.Bcc + '</span></button>'
+              ));
           }
-
-          var secondaryFields = '';
-          for(var fieldI in fields) {
-             var fieldName = fields[fieldI].name;
-             var value = contact[fieldName];
-             if (value) {
-               secondaryFields = secondaryFields + '<div class="ms-Persona-secondaryText"><strong>' + fields[fieldI].title + ':</strong>&nbsp;' + value + '</div>';
-             }
-          }
-          var contact_url = CRMContactURL;
-          contact_url += "&cid=" + String(contact.contact_id);
-          var html = '' +
-            '<div class="ms-Persona">' +
-            '<div class="ms-Persona-details">' +
-            '<div class="ms-Persona-primaryText">' + name + '</div>' +
-            '<div class="ms-ListItem-actions search-contact-profile"><div class="ms-ListItem-action">' +
-            '<a href="' + contact_url + '" target="_blank"><i class="ms-Icon ms-Icon--Contact" title="' + UIText.ContactScreen.TitleURL + '"></i></a>' +
-            '</div></div>' +
-            '<div class="ms-Persona-secondaryText">' + email + '</div>' +
-            secondaryFields +
-            buttons +
-            '</div>' +
-            '</div>';
-          $('#contacts').append(html);
+          $('#contacts').append($('<div class="ms-Persona">').append(details));
         }
 
         $("#contacts .ms-Button.to").click(function () {
-          var email = $(this).parent('.CiviCRM-Email').data('civicrm-email');
-          var name = $(this).parent('.CiviCRM-Email').data('civicrm-name');
+          var email = $(this).parent('.CiviCRM-Email').attr('data-civicrm-email');
+          var name = $(this).parent('.CiviCRM-Email').attr('data-civicrm-name');
           var recipients = item.to;
           addReiever(recipients, email, name);
         });
         $("#contacts .ms-Button.cc").click(function () {
-          var email = $(this).parent('.CiviCRM-Email').data('civicrm-email');
-          var name = $(this).parent('.CiviCRM-Email').data('civicrm-name');
+          var email = $(this).parent('.CiviCRM-Email').attr('data-civicrm-email');
+          var name = $(this).parent('.CiviCRM-Email').attr('data-civicrm-name');
           var recipients = item.cc;
           addReiever(recipients, email, name);
         });
         $("#contacts .ms-Button.bcc").click(function () {
-          var email = $(this).parent('.CiviCRM-Email').data('civicrm-email');
-          var name = $(this).parent('.CiviCRM-Email').data('civicrm-name');
+          var email = $(this).parent('.CiviCRM-Email').attr('data-civicrm-email');
+          var name = $(this).parent('.CiviCRM-Email').attr('data-civicrm-name');
           var recipients = item.bcc;
           addReiever(recipients, email, name);
         });
