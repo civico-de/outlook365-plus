@@ -320,8 +320,9 @@
         $('#saving-contact-help-text').toggle(false);
         return;
       }
+      // Re-rendering the list recreates the notice hidden, so show it afterwards.
+      await showContacts();
       showContactSavedInfo();
-      showContacts();
     }
 
     async function confirmSaveAllContact(event) {
