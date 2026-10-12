@@ -7,7 +7,7 @@
 #
 # URL:  CiviCRM http://localhost:8200 (admin/admin)
 #
-# Re-provision from scratch (re-runs init.d hooks): docker compose down -v && up -d
+# Re-provision from scratch (re-seeds the profile, re-runs init.d hooks): docker compose down -v && up -d
 
 # Explicit project name — unnamed .docker/ stacks all become one project
 # called "docker" and share volumes across checkouts. The ports are chosen
@@ -32,6 +32,10 @@ services:
       # Must match the host:port opened in the browser (asset URLs).
       CIVIKITCHEN_SITE_URL: "http://localhost:8200"
       CIVIKITCHEN_DEMO_USER: admin
+      # Dependencies, config, seed records and API users: profiles/dev/profile.json.
+      CIVIKITCHEN_PROFILE: dev
+      CIVIKITCHEN_PROFILE_PATH: /civikitchen-profiles
+      CIVIKITCHEN_TRUST_EXTERNAL_PROFILES: "1"
       # Order matters: dataprocessor is a <requires> of this extension, and
       # keyring owns the credential this extension sends.
       CIVIKITCHEN_ENABLE_EXTENSIONS: "authx,dataprocessor,keyring,outlook365"
@@ -40,6 +44,7 @@ services:
       - ../../keyring:/var/www/html/ext/keyring:ro
       # Same expression as fetch-ext.sh's DEST; keep the two in step.
       - ${OUTLOOK365_EXT_DIR:-${HOME}/.cache/outlook365-ext}/dataprocessor:/var/www/html/ext/dataprocessor:ro
+      - ./profiles:/civikitchen-profiles:ro
       - ./init.d:/civikitchen-init.d:ro
 
   db:
