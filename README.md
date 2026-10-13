@@ -146,7 +146,7 @@ same as the `ci` job's own stack. The browser suite runs in civikitchen's
 ## Requirements
 
 * CiviCRM 6.17 or newer (measured on 6.17.3)
-* PHP 8.4 (measured on 8.4.25)
+* PHP 8.2 or newer (measured on 8.4.25)
 * Data Processor 1.1.0 or newer
 * [keyring](https://github.com/civico-de/keyring)
 * Microsoft Office 365
