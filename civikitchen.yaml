@@ -63,16 +63,13 @@ policy:
     - path: outlook365/settings/saveContactInGroup.js
       reason: Upstream outlook365 2.2.7 with a narrow fork diff; reformatting it would break the rebase the README describes
 
-  # tests/e2e/lib.sh: this suite has its own helpers — token minting and
-  # curl-reading-its-config-from-stdin, no maildev.
   # The phpunit files: there is no PHP suite here, see policy.tests.
   template_custom:
     paths:
-      - tests/e2e/lib.sh
       - phpunit.xml.dist
       - tests/phpunit/bootstrap.php
       - tests/phpunit/ckHeadless.php
-    reason: An e2e suite with its own helpers, and no PHP test suite to bootstrap
+    reason: No PHP test suite to bootstrap
 
   # dataprocessor IS on the public registry, but measured on a clean boot:
   # civikitchen downloads it, enables it, and immediately enables outlook365

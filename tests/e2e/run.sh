@@ -17,7 +17,7 @@ if [ "$(curl -s -o /dev/null -w '%{http_code}' "$BASE_URL/civicrm")" = "000" ]; 
   exit 1
 fi
 for ext in outlook365 dataprocessor keyring authx; do
-  if ! cvx api4 Extension.get \
+  if ! cv api4 Extension.get \
     "{\"where\":[[\"key\",\"=\",\"$ext\"],[\"status\",\"=\",\"installed\"]],\"checkPermissions\":false}" \
     | grep -q '"key"'; then
     echo "Extension $ext is not installed — the stack is still provisioning." >&2

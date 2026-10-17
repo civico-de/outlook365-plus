@@ -10,9 +10,9 @@ set -uo pipefail
 echo "outlook365 e2e — installability"
 echo
 
-note "$(cvx ev 'echo "CiviCRM " . CRM_Utils_System::version() . ", PHP " . PHP_VERSION . ", Smarty " . \Smarty\Smarty::SMARTY_VERSION;')"
+note "$(cv ev 'echo "CiviCRM " . CRM_Utils_System::version() . ", PHP " . PHP_VERSION . ", Smarty " . \Smarty\Smarty::SMARTY_VERSION;')"
 
-cvx api4 Extension.get '{"where":[["key","IN",["outlook365","dataprocessor","keyring","authx"]]],"select":["key","status"],"checkPermissions":false}' \
+cv api4 Extension.get '{"where":[["key","IN",["outlook365","dataprocessor","keyring","authx"]]],"select":["key","status"],"checkPermissions":false}' \
   > "$OUT_DIR/extensions.json"
 for ext in outlook365 dataprocessor keyring authx; do
   check "$ext is installed" \

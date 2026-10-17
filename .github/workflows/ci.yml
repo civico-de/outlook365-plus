@@ -100,8 +100,7 @@ jobs:
           path: .civikitchen-siblings/keyring
 
       # Port 8200 is fixed, not derived: CIVIKITCHEN_SITE_URL in the compose
-      # file's own environment would have to move with it, and the e2e
-      # suite's BASE_URL default (tests/e2e/lib.sh) already matches it.
+      # file's own environment would have to move with it.
       # dataprocessor is not mounted here — it resolves through the same
       # civikitchen.yaml pin the `ci` job's stack uses.
       - name: Compose override — publish the port, mount keyring

@@ -58,7 +58,7 @@ Smarty 5 and keyring.
 - APIv3: `entity`, `action`, `json` as a form body to `civicrm/ajax/rest`
 - APIv4: `params` as a form body to `civicrm/ajax/api4/<Entity>/<action>`
 
-with `X-Civi-Auth: Bearer <token>` and nothing else. `tests/e2e/lib.sh` builds
+with `X-Civi-Auth: Bearer <token>` and nothing else. `tests/e2e/lib.local.sh` builds
 the same shapes with curl.
 
 | Call | Result |

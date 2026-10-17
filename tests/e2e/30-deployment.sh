@@ -14,11 +14,11 @@ V3_CONTACTS='{"sequential":1,"options":{"limit":1}}'
 echo "outlook365 e2e — deployment requirements"
 echo
 
-guards="$(cvx ev 'echo json_encode(Civi::settings()->get("authx_guards"));')"
+guards="$(cv ev 'echo json_encode(Civi::settings()->get("authx_guards"));')"
 check "authx_guards contains perm" \
   "$(printf '%s' "$guards" | grep -q '"perm"' && echo 0 || echo 1)" "got $guards"
 for flow in xheader header; do
-  cred="$(cvx ev "echo json_encode(Civi::settings()->get('authx_${flow}_cred'));")"
+  cred="$(cv ev "echo json_encode(Civi::settings()->get('authx_${flow}_cred'));")"
   check "authx_${flow}_cred accepts api_key" \
     "$(printf '%s' "$cred" | grep -q '"api_key"' && echo 0 || echo 1)" "got $cred"
 done
@@ -31,13 +31,13 @@ export TOKEN
 # fail — that is why the fork can drop the site key but the deployment cannot
 # drop the permission.
 role_perms() { # role_perms <json-array>
-  cvx ev "\Civi\Api4\Role::update(FALSE)->addWhere('name','=','outlook365_e2e')
+  cv ev "\Civi\Api4\Role::update(FALSE)->addWhere('name','=','outlook365_e2e')
     ->addValue('permissions', json_decode('$1', TRUE))->execute();" >/dev/null
 }
-without_auth="$(cvx ev "
+without_auth="$(cv ev "
   \$r = \Civi\Api4\Role::get(FALSE)->addWhere('name','=','outlook365_e2e')->execute()->single();
   echo json_encode(array_values(array_diff(\$r['permissions'], ['authenticate with api key'])));")"
-full="$(cvx ev "
+full="$(cv ev "
   \$r = \Civi\Api4\Role::get(FALSE)->addWhere('name','=','outlook365_e2e')->execute()->single();
   echo json_encode(\$r['permissions']);")"
 

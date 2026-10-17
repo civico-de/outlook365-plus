@@ -31,7 +31,7 @@ function lib(code, ...args) {
 export const sql = (query) => lib('sql "$1"', query);
 export const cv = (entityAction, params) =>
   JSON.parse(
-    lib('cvx api4 "$1" "$2"', entityAction, JSON.stringify({ ...params, checkPermissions: false })),
+    lib('cv api4 "$1" "$2"', entityAction, JSON.stringify({ ...params, checkPermissions: false })),
   );
 
 export function seedSubject() {
