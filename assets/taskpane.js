@@ -8,6 +8,10 @@
     var moreAvailable = true;
     // Bumped by reset(): a list response from before it belongs to a list that is gone.
     var generation = 0;
+    // A page request in flight; scrolling again before it answers would ask for the same offset.
+    var loading = false;
+    // Resolves once getfields has answered, so contacts never render without their secondary fields.
+    var fieldsLoaded = null;
     var search = false;
     var config = false;
 
@@ -60,6 +64,17 @@
       setSelected(box, !box.prop('checked'));
     });
 
+    // Which recipient field a To/Cc/Bcc button fills.
+    function recipientsFor(button) {
+      return button.hasClass('to') ? item.to : (button.hasClass('cc') ? item.cc : item.bcc);
+    }
+
+    // Bound once: binding per loaded page would stack handlers on the rows already shown.
+    $(document).on('click', '#contacts .CiviCRM-Email .ms-Button', function () {
+      var row = $(this).parent('.CiviCRM-Email');
+      addReiever(recipientsFor($(this)), row.attr('data-civicrm-email'), row.attr('data-civicrm-name'));
+    });
+
     $("body").delegate(".selectAll", "click", function (event) {
       let parentElement = $(event.target).closest(".allData").parent()
       setSelected(parentElement.children("ul").children(".ms-ListItem").children(".ms-ListItem-selectionTarget"), true)
@@ -84,7 +99,7 @@
     });
 
     $(window).scroll(function () {
-      if ($(window).scrollTop() == $(document).height() - $(window).height()) {
+      if (!loading && $(window).scrollTop() == $(document).height() - $(window).height()) {
         // ajax call get data from server and append to the div
         if (currentTab === "contacts") {
           loadNextContacts();
@@ -173,25 +188,24 @@
       $('#groups').html('');
       currentOffset = 0;
       moreAvailable = true;
+      loading = false;
       search = false;
       fields = [];
-      if (currentTab === "contacts") {
-        getContactFields();
-      }
+      fieldsLoaded = currentTab === "contacts" ? getContactFields() : null;
     }
 
     /**
-     * Retrieve next batch of contacts.
+     * Retrieve the secondary fields shown under each contact.
      */
     function getContactFields() {
       if (!config) {
-        return;
+        return null;
       }
       $('#loadingContacts').show();
-      CiviCRM.api3(config, 'Outlook365Contact', 'getfields', {
+      return CiviCRM.api3(config, 'Outlook365Contact', 'getfields', {
         "sequential": 1,
         "api_action": "get"
-      }).done(function (result) {
+      }).done(current(function (result) {
         fields = [];
         if (!result.is_error) {
           for (var i in result.values) {
@@ -204,7 +218,7 @@
             }
           }
         }
-      }).fail(showError);
+      })).fail(current(showError));
     }
 
     /**
@@ -219,9 +233,10 @@
      */
     function loadNextGroups() {
 
-      if (!moreAvailable || !config) {
+      if (!moreAvailable || !config || loading) {
         return;
       }
+      loading = true;
       var params = {
         "sequential": 1,
         "return": ["id", "name", "title"],
@@ -233,7 +248,15 @@
       if (search) {
         params.title = {"LIKE": '%' + search + '%'};
       }
-      CiviCRM.api3(config, 'Group', 'get', params).done(current(addGroups)).fail(current(showError));
+      CiviCRM.api3(config, 'Group', 'get', params)
+        .always(current(settle)).done(current(addGroups)).fail(current(showError));
+    }
+
+    /**
+     * The page request has answered; the next scroll may ask for more.
+     */
+    function settle() {
+      loading = false;
     }
 
     /**
@@ -282,31 +305,34 @@
 
     async function expandGroups() {
       // The event target may be the toggle's icon or its label, so the header is read from the button.
-      let header = $(this).parent('.CiviCRM-Group-Email');
-      let chevron = $(this).children('i');
+      let toggle = $(this);
+      let header = toggle.parent('.CiviCRM-Group-Email');
+      let chevron = toggle.children('i');
+      let id = header.data('civicrm-id');
+      // Every expand, collapse and search replaces the token; a response for an older one is dropped.
+      let token = {};
+      header.data('pending', token);
       if (header.hasClass("expanded")) {
-        let id = header.data('civicrm-id');
         header.removeClass('expanded')
         header.children(".allData").remove()
         header.children(".CiviCRM-Group-Email").remove()
         header.children("#group_search_" + id).remove()
         header.children("ul").remove()
         chevron.attr('class', 'ms-Icon ms-Icon--ChevronRight');
-        $(this).attr('aria-expanded', 'false');
+        toggle.attr('aria-expanded', 'false');
         return;
       }
       header.addClass('expanded')
       let name = header.attr('data-civicrm-name').replace(" ", "-").toLowerCase();
-      let id = header.data('civicrm-id');
-      // $(this).parent().append('<div id="' + name + '-expanded-groups"></div>');
-      var params = {
-        "sequential": 1,
-        "options": {
-          "limit": 0,
-        },
-        "group_id": id,
-      };
-      let members = await getGroupContacts(params)
+      let members = await getGroupContacts(groupParams(id, ''))
+      // A reset() since the request detached the header; its outcome belongs to no list on screen.
+      if (header.data('pending') !== token || !header[0].isConnected) {
+        return;
+      }
+      if (!members) {
+        showError();
+        members = [];
+      }
 
       var buttons = '<button class="ms-Button ms-Button--small to"><span class="ms-Button-label">' + UIText.To + '</span></button>' +
         '<button class="ms-Button ms-Button--small cc"><span class="ms-Button-label">' + UIText.Cc + '</span></button>' +
@@ -320,78 +346,61 @@
       $("#group_search_" + id + " .ms-SearchBox-text").text(UIText.GroupScreen.SearchContact);
       $("#groupSearchField_" + id).attr('aria-label', UIText.GroupScreen.SearchContact);
 
-      header.append($('<ul class="ms-List">').addClass(id + '-list-email').append(members));
-      var SearchBoxElements = document.querySelectorAll(".ms-SearchBox");
-      for (var i = 0; i < SearchBoxElements.length; i++) {
-        new fabric['SearchBox'](SearchBoxElements[i]);
-      }
-
+      let list = $('<ul class="ms-List">').append(members);
+      header.append(list);
+      header.find('.ms-SearchBox').each(function () {
+        new fabric['SearchBox'](this);
+      });
 
       // to get smoothness change class after query
       chevron.attr('class', 'ms-Icon ms-Icon--ChevronDown');
-      $(this).attr('aria-expanded', 'true');
+      toggle.attr('aria-expanded', 'true');
 
-      $("#groups .ms-Button.to").click(function (event) {
-        let toSend = []
-        var recipients = item.to
-        $('.' + id + '-list-email').children().each(function (index) {
-          if ($(this).hasClass('is-selected')) {
-            let contact = $(this)
-            toSend.push([contact.attr('data-civicrm-name'), contact.attr('data-civicrm-email')])
-          }
-
+      // Bound to this group's own buttons, so another expanded group's selection never comes along.
+      header.children('.CiviCRM-Group-Email').children('.ms-Button').click(function () {
+        let recipients = recipientsFor($(this));
+        list.children('.is-selected').each(function () {
+          addReiever(recipients, $(this).attr('data-civicrm-email'), $(this).attr('data-civicrm-name'));
         });
-        for (var iter in toSend) {
-          addReiever(recipients, toSend[iter][1], toSend[iter][0]);
-        }
       });
 
-      $("#groups .ms-Button.cc").click(function (event) {
-        let toSend = []
-        var recipients = item.cc
-        $('.' + id + '-list-email').children().each(function (index) {
-          if ($(this).hasClass('is-selected')) {
-            let contact = $(this)
-            toSend.push([contact.attr('data-civicrm-name'), contact.attr('data-civicrm-email')])
-          }
-
-        });
-        for (var iter in toSend) {
-          addReiever(recipients, toSend[iter][1], toSend[iter][0]);
-        }
-      });
-
-      $("#groups .ms-Button.bcc").click(function (event) {
-        let toSend = []
-        var recipients = item.bcc
-        $('.' + id + '-list-email').children().each(function (index) {
-          if ($(this).hasClass('is-selected')) {
-            let contact = $(this)
-            toSend.push([contact.attr('data-civicrm-name'), contact.attr('data-civicrm-email')])
-          }
-
-        });
-        for (var iter in toSend) {
-          addReiever(recipients, toSend[iter][1], toSend[iter][0]);
-        }
-      });
-
-      $("#groupSearchField_" + id).on("keypress", async function (e) {
+      $("#groupSearchField_" + id).on("keypress", function (e) {
         if (e.keyCode == 13) {
-          let groupSearchVal = $(this).val();
-          console.log(groupSearchVal)
-          if (groupSearchVal != '') {
-            params.display_name = {"LIKE": '%' + groupSearchVal + '%'};
-          }
-          let found = await getGroupContacts(params)
-          $("." + id + '-list-email').empty().append(found)
+          let search = {};
+          header.data('pending', search);
+          getGroupContacts(groupParams(id, $(this).val())).then(function (found) {
+            if (header.data('pending') !== search || !header[0].isConnected) {
+              return;
+            }
+            if (!found) {
+              showError();
+            }
+            list.empty().append(found || [])
+          });
           return false; // prevent the button click from happening
         }
       });
     }
 
     /**
-     * The group's members as list items; names and addresses go in as text.
+     * The members query for a group, filtered by name when the search box holds a term.
+     */
+    function groupParams(id, term) {
+      var params = {
+        "sequential": 1,
+        "options": {
+          "limit": 0,
+        },
+        "group_id": id,
+      };
+      if (term !== '') {
+        params.display_name = {"LIKE": '%' + term + '%'};
+      }
+      return params;
+    }
+
+    /**
+     * The group's members as list items, or null when the call failed; names and addresses go in as text.
      */
     async function getGroupContacts(params) {
       var items = [];
@@ -410,7 +419,9 @@
               )
             ))));
         }
-      }).catch(showError);
+      }).catch(function () {
+        items = null;
+      });
       return items;
     }
 
@@ -418,9 +429,10 @@
      * Retrieve next batch of contacts.
      */
     function loadNextContacts() {
-      if (!moreAvailable || !config) {
+      if (!moreAvailable || !config || loading) {
         return;
       }
+      loading = true;
       $('#loadingContacts').show();
       var params = {
         "sequential": 1,
@@ -432,7 +444,15 @@
       if (search) {
         params.display_name = {"LIKE": '%' + search + '%'};
       }
-      CiviCRM.api3(config, 'Outlook365Contact', 'get', params).done(current(addContacts)).fail(current(showError));
+      var request = CiviCRM.api3(config, 'Outlook365Contact', 'get', params);
+      var add = current(addContacts), done = current(settle);
+      var fail = current(function () {
+        $('#loadingContacts').hide();
+        showError();
+      });
+      $.when(fieldsLoaded).always(function () {
+        request.always(done).done(add).fail(fail);
+      });
     }
 
     /**
@@ -484,25 +504,6 @@
           }
           $('#contacts').append($('<div class="ms-Persona">').append(details));
         }
-
-        $("#contacts .ms-Button.to").click(function () {
-          var email = $(this).parent('.CiviCRM-Email').attr('data-civicrm-email');
-          var name = $(this).parent('.CiviCRM-Email').attr('data-civicrm-name');
-          var recipients = item.to;
-          addReiever(recipients, email, name);
-        });
-        $("#contacts .ms-Button.cc").click(function () {
-          var email = $(this).parent('.CiviCRM-Email').attr('data-civicrm-email');
-          var name = $(this).parent('.CiviCRM-Email').attr('data-civicrm-name');
-          var recipients = item.cc;
-          addReiever(recipients, email, name);
-        });
-        $("#contacts .ms-Button.bcc").click(function () {
-          var email = $(this).parent('.CiviCRM-Email').attr('data-civicrm-email');
-          var name = $(this).parent('.CiviCRM-Email').attr('data-civicrm-name');
-          var recipients = item.bcc;
-          addReiever(recipients, email, name);
-        });
       }
       if (data.count < 25) {
         moreAvailable = false;
