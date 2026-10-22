@@ -66,6 +66,32 @@ test("lists contacts, finds one by name and adds it as a recipient", async ({ pa
   h.assertNetwork(log, minted.token, key);
 });
 
+test("a search sent before the first list arrives shows only its own results", async ({ page }) => {
+  let release;
+  const held = new Promise((resolve) => { release = resolve; });
+  await page.route(`${h.BASE_URL}/civicrm/ajax/rest`, async (r) => {
+    const body = new URLSearchParams(r.request().postData() || "");
+    const unfiltered = body.get("entity") === "Outlook365Contact" && body.get("action") === "get"
+      && !JSON.parse(body.get("json") || "{}").display_name;
+    if (unfiltered) await held;
+    return r.fallback();
+  });
+  const log = await h.openPane(page, "taskpane.html", { item: compose, roaming: configured() });
+
+  await page.locator("#searchField").fill(`Example ${run}`);
+  await page.locator("#searchField").press("Enter");
+  const found = page.locator("#contacts .ms-Persona");
+  await expect(found).toHaveCount(1);
+  release();
+  // jQuery 3 runs .then callbacks in a timer queued before the request leaves jQuery.active,
+  // so one timer after that has seen the stale list's callback run.
+  await page.waitForFunction(() => window.jQuery.active === 0);
+  await page.evaluate(() => new Promise((resolve) => { setTimeout(resolve, 0); }));
+  await expect(found).toHaveCount(1);
+  await expect(found.locator(".ms-Persona-primaryText")).toHaveText(person.name);
+  h.assertNetwork(log, minted.token, key);
+});
+
 test("expands a group and adds its selected members as Cc", async ({ page }) => {
   const log = await h.openPane(page, "taskpane.html", { item: compose, roaming: configured() });
   await page.locator(".ms-CommandButton--pivot .groups").click();

@@ -6,6 +6,8 @@
     var currentOffset = 0;
     var currentTab = "contacts"
     var moreAvailable = true;
+    // Bumped by reset(): a list response from before it belongs to a list that is gone.
+    var generation = 0;
     var search = false;
     var config = false;
 
@@ -154,6 +156,7 @@
      * Reset the contact list
      */
     function reset() {
+      generation++;
       config = getConfig();
       if (!config) {
         $('.not-configured-warning').show();
@@ -230,7 +233,7 @@
       if (search) {
         params.title = {"LIKE": '%' + search + '%'};
       }
-      CiviCRM.api3(config, 'Group', 'get', params).done(addGroups).fail(showError);
+      CiviCRM.api3(config, 'Group', 'get', params).done(current(addGroups)).fail(current(showError));
     }
 
     /**
@@ -429,7 +432,19 @@
       if (search) {
         params.display_name = {"LIKE": '%' + search + '%'};
       }
-      CiviCRM.api3(config, 'Outlook365Contact', 'get', params).done(addContacts).fail(showError);
+      CiviCRM.api3(config, 'Outlook365Contact', 'get', params).done(current(addContacts)).fail(current(showError));
+    }
+
+    /**
+     * Wrap a list callback so that it runs only while the list it was loaded for is shown.
+     */
+    function current(callback) {
+      var loadedFor = generation;
+      return function () {
+        if (loadedFor === generation) {
+          callback.apply(this, arguments);
+        }
+      };
     }
 
     /**
