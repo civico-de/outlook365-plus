@@ -44,7 +44,6 @@ $perms = [
   'add contacts',
   'access all custom data',
   'view all activities',
-  'edit all activities',
   'edit groups',
   'access outlook 365 pages',
 ];

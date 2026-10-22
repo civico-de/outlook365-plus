@@ -18,7 +18,7 @@ note "subject contact id $CONTACT_ID"
 
 read -r TOKEN_ID TOKEN < <(mint_token "$CONTACT_ID" \
   'access CiviCRM' 'access AJAX API' 'view all contacts' 'edit all contacts' \
-  'add contacts' 'view all activities' 'edit all activities')
+  'add contacts' 'view all activities')
 export TOKEN
 
 # ── what assets/civicrm.js sends ─────────────────────────────────────────

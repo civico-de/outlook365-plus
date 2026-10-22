@@ -9,7 +9,6 @@ const SCOPE = [
   "edit all contacts",
   "add contacts",
   "view all activities",
-  "edit all activities",
 ];
 const run = `pw${Date.now().toString(36)}`;
 const known = { displayName: `Kim Known ${run}`, emailAddress: `kim.${run}@example.org` };
