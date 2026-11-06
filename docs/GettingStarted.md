@@ -64,7 +64,7 @@ User** roles.
 
 ## Outlook 365 Manifest file (manifest.xml)
 
-In the CiviCRM Menu under *Administer*. Select the **Download Outlook 365 Manifest file.xml** option and download the **manifest.xml** file. This file is used to install the Outlook integration as an **Add-In** into Outlook 365.
+In the CiviCRM Menu under *Administer*. Select the **Download Outlook 365 Manifest.xml** option and download the **manifest.xml** file. This file is used to install the Outlook integration as an **Add-In** into Outlook 365.
 
 ## Setting up Outlook 365
 
