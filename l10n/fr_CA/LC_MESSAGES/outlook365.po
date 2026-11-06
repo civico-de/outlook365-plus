@@ -98,3 +98,6 @@ msgstr "Groupes"
 msgid "Search"
 msgstr "Recherche"
 
+#: ./templates/CRM/Outlook365/Page/Manifest.tpl
+msgid "Search civicrm contacts within Outlook."
+msgstr ""
