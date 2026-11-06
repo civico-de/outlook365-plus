@@ -5,6 +5,8 @@ either Microsoft Outlook 365 Web and Desktop clients. It generates a Microsoft
 Outlook 365 add-in which connects Outlook 365 to the CiviCRM site; the add-in
 can be deployed organisation-wide or per user.
 
+Documentation: https://civico-de.github.io/outlook365/
+
 Features include:
 * Search CiviCRM for contacts or groups.
 * Search for contacts within a CiviCRM group.
