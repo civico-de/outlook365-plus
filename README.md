@@ -167,4 +167,6 @@ companies for paid CiviCRM support and CiviCRM development services:
 Re-development of the extension was funded and performed as part of
 [Google Summer of Code 2020](https://summerofcode.withgoogle.com/archive/2020/projects/6234630803423232/).
 
-This fork is maintained by civico GmbH.
+This fork is maintained by civico GmbH. Report bugs in the
+[issue tracker](https://github.com/civico-de/outlook365/issues). Report security issues by
+email to security@civico.de, not in a public issue; see [SECURITY.md](SECURITY.md).

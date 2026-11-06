@@ -3,6 +3,12 @@
   "description": "CiviCRM extension: Outlook 365 add-in talking to CiviCRM over a header-borne token.",
   "type": "civicrm-ext",
   "license": "AGPL-3.0",
+  "authors": [
+    {
+      "name": "Johannes Filter",
+      "email": "johannes@civico.de"
+    }
+  ],
   "require": {
     "php": ">=8.2"
   },

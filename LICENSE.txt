@@ -1,6 +1,6 @@
 Package: outlook365
 Copyright (C) 2019-2026 CiviCoop, Agileware and the upstream contributors
-Copyright (C) 2026 civico GmbH <hi@jfilter.de> (fork)
+Copyright (C) 2026 civico GmbH <johannes@civico.de> (fork)
 Licensed under the GNU Affero Public License 3.0 (below).
 
 -------------------------------------------------------------------------------
