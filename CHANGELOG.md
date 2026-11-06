@@ -5,6 +5,16 @@ release of this fork.
 
 ## [Unreleased]
 
+### Fixed
+
+- One click on "Save Email" in the read pane saves the mail once. After a contact or the settings
+  had been saved, it created the Email activity twice.
+- A contact saved from an address without a name, or with a name lacking a space or comma, keeps
+  first and last name empty and shows its email address as its name, instead of the last name
+  "Unknown".
+- "Save Email" in a read pane that is not configured yet opens the settings.
+- The extension's documentation link points to the handbook.
+
 ## [3.1.2] - 2026-10-22
 
 ### Fixed

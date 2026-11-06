@@ -27,6 +27,8 @@
       }
 
       $('#settings-icon').on('click', openSettingsDialog);
+      // The button sits outside the redrawn contact list, so it is bound once here.
+      $('.save-email').on('click', saveEmail);
 
       $("body").delegate(".selectAll", "click", function (event) {
         setSelected($(".ms-ListItem-selectionTarget"), true)
@@ -152,30 +154,19 @@
     async function saveContactToCRM(contact) {
       let contactName = splitContactName(contact.name);
       var contact_info
+      // The email goes in with the contact: CiviCRM refuses an Individual without a name
+      // or an email, and falls back to the email as display name.
       await CiviCRM.api3(config, 'Contact', 'create', {
         "first_name": contactName.firstName,
         'last_name': contactName.lastName,
+        "email": contact.email,
         "contact_type": 'Individual',
       }).done(function (result) {
         contact_info = result
       }).catch(response => {
         openDialog(dialogComponent);
       });
-      if (!contact_info) {
-        return null;
-      }
-      var contact_id = contact_info.id
-
-      await CiviCRM.api3(config, 'Email', 'create', {
-        "contact_id": contact_id,
-        "email": contact.email,
-      }).done(function (result) {
-        console.log(result)
-      }).catch(response => {
-        openDialog(dialogComponent);
-        contact_id = null;
-      });
-      return contact_id
+      return contact_info ? contact_info.id : null;
     }
 
     async function saveContact() {
@@ -397,11 +388,14 @@
       $(".save-contact").on('click', saveContact)
       $(".save-contact-all-group").on('click', confirmSaveAllContactInGroup)
       $(".save-contact-all").on('click', confirmSaveAllContact)
-      $(".save-email").on('click', saveEmail)
 
     }
 
     async function saveEmail() {
+      if (!config) {
+        openSettingsDialog();
+        return;
+      }
       var emailBody = null
       await requiredAttendees.body.getAsync(
         "html",
@@ -511,14 +505,11 @@
       if (separatorIndex === -1) {
         separatorIndex = name.indexOf(',');
       }
-      let contact = {};
+      // A name with neither, such as a bare email address, is no first or last name.
       if (separatorIndex === -1) {
-        contact.lastName = 'Unknown';
-      } else {
-        contact.lastName = name.substring(separatorIndex + 1);
+        return {firstName: '', lastName: ''};
       }
-      contact.firstName = name.substring(0, separatorIndex);
-      return contact;
+      return {firstName: name.substring(0, separatorIndex), lastName: name.substring(separatorIndex + 1)};
     }
   }
 })();

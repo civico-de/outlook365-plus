@@ -207,7 +207,11 @@ test.describe("a site with hundreds of groups", () => {
   let groupIds;
 
   test.beforeAll(() => {
-    const records = Array.from({ length: COUNT }, (_, i) => ({ title: title(i) }));
+    // An explicit name: core derives one from a long title that overflows its column once ids reach 1000.
+    const records = Array.from({ length: COUNT }, (_, i) => ({
+      title: title(i),
+      name: `bulk_${run}_${i}`,
+    }));
     groupIds = h.cv("Group.save", { records }).map((g) => g.id);
   });
   test.afterAll(() => h.cv("Group.delete", { where: [["title", "LIKE", `${prefix} %`]] }));
@@ -461,4 +465,85 @@ test("save all contacts stops at the first refusal instead of saving on", async 
   expect(contactsWithEmail(newcomer("17b").emailAddress)).toEqual([]);
   h.assertNetwork(log, noAdd.token, key);
   h.revokeToken(noAdd.id);
+});
+
+// Every Activity create the pane sends once it has gone idle after one Save Email click.
+async function saveEmailOnce(page, log, subjectLine) {
+  await page.locator(".save-email").click();
+  await expect.poll(async () => (await h.officeState(page)).categories).toEqual([SAVED]);
+  await expect.poll(() => page.evaluate(() => window.jQuery.active)).toBe(0);
+  const creates = log.requests.filter((r) =>
+    r.url().includes("/civicrm/ajax/api4/Activity/create"),
+  );
+  expect(creates).toHaveLength(1);
+  expect(h.sql(`SELECT COUNT(*) FROM civicrm_activity WHERE subject = '${subjectLine}'`)).toBe("1");
+}
+
+test("after saving a contact, one Save Email click saves the mail once", async ({ page }) => {
+  const item = message(18);
+  const log = await open(page, item);
+  await expect(rows(page)).toHaveCount(2);
+  await rows(page).nth(1).locator(".save-contact").click();
+  await expect(page.locator("#saved-contact-help-text")).toBeVisible();
+  await expect(rows(page).nth(1)).toHaveClass(/not_to_save/);
+  await saveEmailOnce(page, log, item.subject);
+  h.assertNetwork(log, minted.token, key);
+});
+
+test("after saving the settings, one Save Email click saves the mail once", async ({ page }) => {
+  const item = message(19);
+  const log = await open(page, item);
+  await expect(rows(page)).toHaveCount(2);
+  // Marks the list so the redraw after saving the settings can be told apart from it.
+  await page.locator("#contacts .ms-List").evaluate((list) => list.setAttribute("data-stale", ""));
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  const dialog = page.frameLocator("#office-dialog");
+  await expect(dialog.locator("#civicrm-url")).toHaveValue(h.BASE_URL);
+  await expect(dialog.locator("#settings-done")).toBeEnabled();
+  await dialog.locator("#settings-done").click();
+  await expect(page.locator("#office-dialog")).toHaveCount(0);
+  await expect(page.locator("#contacts .ms-List:not([data-stale]) > .ms-ListItem")).toHaveCount(2);
+  await saveEmailOnce(page, log, item.subject);
+  h.assertNetwork(log, minted.token, key);
+});
+
+test("a sender name without a space or comma leaves first and last name empty", async ({
+  page,
+}) => {
+  const bare = { displayName: `bare.${run}@example.org`, emailAddress: `bare.${run}@example.org` };
+  const log = await open(page, message(20, { to: [bare] }));
+  await expect(rows(page)).toHaveCount(2);
+  await rows(page).nth(1).locator(".save-contact").click();
+  await expect(page.locator("#saved-contact-help-text")).toBeVisible();
+  const [created] = contactsWithEmail(bare.emailAddress);
+  expect(
+    h.sql(`SELECT contact_type, COALESCE(first_name, ''), COALESCE(last_name, ''), display_name
+      FROM civicrm_contact WHERE id = ${Number(created)}`),
+  ).toBe(`Individual\t\t\t${bare.emailAddress}`);
+  expect(contactsWithEmail(bare.emailAddress)).toEqual([created]);
+  expect(h.sql(`SELECT COUNT(*) FROM civicrm_email WHERE contact_id = ${Number(created)}`)).toBe(
+    "1",
+  );
+  await expect(rows(page).nth(1).locator(".ms-ListItem-secondaryText")).toHaveText(
+    bare.emailAddress,
+  );
+  h.assertNetwork(log, minted.token, key);
+});
+
+test("Save Email on an unconfigured pane opens the settings and sends nothing", async ({
+  page,
+}) => {
+  const log = await h.openPane(page, "readtaskpane.html", { item: message(21) });
+  await expect(page.frameLocator("#office-dialog").locator("#civicrm-url")).toHaveValue(h.BASE_URL);
+  // The user dismisses the dialog without saving.
+  await page.evaluate(() => {
+    window.__officeState.dialog.frame.remove();
+    window.__officeState.dialog = null;
+  });
+  await page.locator(".save-email").click();
+  await expect(page.frameLocator("#office-dialog").locator("#civicrm-url")).toHaveValue(h.BASE_URL);
+  expect((await h.officeState(page)).dialogUrls).toHaveLength(2);
+  expect(log.requests.filter((r) => r.url().includes("/civicrm/ajax/"))).toEqual([]);
+  expect(log.external).toEqual([]);
+  expect(log.errors).toEqual([]);
 });

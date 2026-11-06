@@ -30,7 +30,7 @@ The settings icon next to a group opens the group's settings in CiviCRM.
 The pane lists the sender and every To, Cc and Bcc recipient, all selected at first.
 
 - An address that belongs to a CiviCRM contact shows the contact's name and a link to the contact.
-- An address that does not has a save button. It creates a contact of type Individual with that email address. The display name from the mail is split at the first space (or, without a space, at the first comma) into first and last name. A name with neither, such as a bare email address, is not kept: the contact gets the last name "Unknown" and no first name.
+- An address that does not has a save button. It creates a contact of type Individual with that email address. The display name from the mail is split at the first space (or, without a space, at the first comma) into first and last name. A name with neither, such as a bare email address, leaves first and last name empty, and CiviCRM shows the email address as the contact's name.
 
 Below the list:
 

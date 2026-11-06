@@ -30,7 +30,7 @@ Das Einstellungs-Symbol neben einer Gruppe öffnet die Einstellungen der Gruppe 
 Der Bereich listet den Absender und alle Empfänger aus An, Cc und Bcc auf, zunächst alle ausgewählt.
 
 - Eine Adresse, die zu einem CiviCRM-Kontakt gehört, zeigt den Namen des Kontakts und einen Link zu ihm.
-- Eine Adresse ohne Kontakt hat einen Speichern-Knopf. Er legt einen Kontakt vom Typ Einzelperson mit dieser E-Mail-Adresse an. Der Anzeigename aus der Mail wird am ersten Leerzeichen (oder, ohne Leerzeichen, am ersten Komma) in Vor- und Nachname geteilt. Ein Name ohne beides, etwa eine nackte E-Mail-Adresse, geht verloren: Der Kontakt bekommt den Nachnamen „Unknown“ und keinen Vornamen.
+- Eine Adresse ohne Kontakt hat einen Speichern-Knopf. Er legt einen Kontakt vom Typ Einzelperson mit dieser E-Mail-Adresse an. Der Anzeigename aus der Mail wird am ersten Leerzeichen (oder, ohne Leerzeichen, am ersten Komma) in Vor- und Nachname geteilt. Bei einem Namen ohne beides, etwa einer nackten E-Mail-Adresse, bleiben Vor- und Nachname leer, und CiviCRM zeigt die E-Mail-Adresse als Namen des Kontakts.
 
 Unter der Liste:
 
