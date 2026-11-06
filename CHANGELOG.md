@@ -5,6 +5,11 @@ release of this fork.
 
 ## [Unreleased]
 
+### Changed
+
+- The repository is now civico-de/outlook365-plus and the handbook is published at
+  https://civico-de.github.io/outlook365-plus/. The extension key stays `outlook365`.
+
 ### Fixed
 
 - A mail is saved in CiviCRM once. "Save Email" created the Email activity twice per click after a
@@ -161,16 +166,16 @@ release of this fork.
   recipients as targets.
 - Two data processors that back the add-in's contact and group lists.
 
-[Unreleased]: https://github.com/civico-de/outlook365/compare/v3.1.2...HEAD
-[3.1.2]: https://github.com/civico-de/outlook365/compare/v3.1.1...v3.1.2
-[3.1.1]: https://github.com/civico-de/outlook365/compare/v3.1.0...v3.1.1
-[3.1.0]: https://github.com/civico-de/outlook365/compare/v3.0.1...v3.1.0
-[3.0.1]: https://github.com/civico-de/outlook365/compare/v3.0.0...v3.0.1
-[3.0.0]: https://github.com/civico-de/outlook365/compare/v2.2.7...v3.0.0
-[2.2.7]: https://github.com/civico-de/outlook365/compare/v2.2.6...v2.2.7
-[2.2.6]: https://github.com/civico-de/outlook365/compare/v2.2.5...v2.2.6
-[2.2.5]: https://github.com/civico-de/outlook365/compare/v2.2.4...v2.2.5
-[2.2.4]: https://github.com/civico-de/outlook365/compare/v2.2.3...v2.2.4
-[2.2.3]: https://github.com/civico-de/outlook365/compare/v2.2.2...v2.2.3
-[2.2.2]: https://github.com/civico-de/outlook365/compare/v2.2.1...v2.2.2
-[2.2.1]: https://github.com/civico-de/outlook365/releases/tag/v2.2.1
+[Unreleased]: https://github.com/civico-de/outlook365-plus/compare/v3.1.2...HEAD
+[3.1.2]: https://github.com/civico-de/outlook365-plus/compare/v3.1.1...v3.1.2
+[3.1.1]: https://github.com/civico-de/outlook365-plus/compare/v3.1.0...v3.1.1
+[3.1.0]: https://github.com/civico-de/outlook365-plus/compare/v3.0.1...v3.1.0
+[3.0.1]: https://github.com/civico-de/outlook365-plus/compare/v3.0.0...v3.0.1
+[3.0.0]: https://github.com/civico-de/outlook365-plus/compare/v2.2.7...v3.0.0
+[2.2.7]: https://github.com/civico-de/outlook365-plus/compare/v2.2.6...v2.2.7
+[2.2.6]: https://github.com/civico-de/outlook365-plus/compare/v2.2.5...v2.2.6
+[2.2.5]: https://github.com/civico-de/outlook365-plus/compare/v2.2.4...v2.2.5
+[2.2.4]: https://github.com/civico-de/outlook365-plus/compare/v2.2.3...v2.2.4
+[2.2.3]: https://github.com/civico-de/outlook365-plus/compare/v2.2.2...v2.2.3
+[2.2.2]: https://github.com/civico-de/outlook365-plus/compare/v2.2.1...v2.2.2
+[2.2.1]: https://github.com/civico-de/outlook365-plus/releases/tag/v2.2.1

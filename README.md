@@ -5,7 +5,7 @@ either Microsoft Outlook 365 Web and Desktop clients. It generates a Microsoft
 Outlook 365 add-in which connects Outlook 365 to the CiviCRM site; the add-in
 can be deployed organisation-wide or per user.
 
-Documentation: https://civico-de.github.io/outlook365/
+Documentation: https://civico-de.github.io/outlook365-plus/
 
 Features include:
 * Search CiviCRM for contacts or groups.
@@ -22,7 +22,7 @@ This extension is licensed under [AGPL-3.0](LICENSE.txt).
 
 ## This is a fork
 
-This fork is <https://github.com/civico-de/outlook365>. Upstream is
+This fork is <https://github.com/civico-de/outlook365-plus>. Upstream is
 <https://lab.civicrm.org/extensions/outlook365>, kept as the remote `upstream`,
 so `git log upstream/master..main` is exactly the delta.
 
@@ -168,5 +168,5 @@ Re-development of the extension was funded and performed as part of
 [Google Summer of Code 2020](https://summerofcode.withgoogle.com/archive/2020/projects/6234630803423232/).
 
 This fork is maintained by civico GmbH. Report bugs in the
-[issue tracker](https://github.com/civico-de/outlook365/issues). Report security issues by
+[issue tracker](https://github.com/civico-de/outlook365-plus/issues). Report security issues by
 email to security@civico.de, not in a public issue; see [SECURITY.md](SECURITY.md).

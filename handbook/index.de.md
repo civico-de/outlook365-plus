@@ -39,7 +39,7 @@ Dies ist ein gepflegter Fork der [ursprünglichen Extension](https://lab.civicrm
 
 ## Installation
 
-Laden Sie das Release-Archiv von der [Release-Seite](https://github.com/civico-de/outlook365/releases), entpacken Sie es in das Extension-Verzeichnis von CiviCRM und aktivieren Sie es nach seinen Voraussetzungen:
+Laden Sie das Release-Archiv von der [Release-Seite](https://github.com/civico-de/outlook365-plus/releases), entpacken Sie es in das Extension-Verzeichnis von CiviCRM und aktivieren Sie es nach seinen Voraussetzungen:
 
 ```bash
 cv ext:enable authx dataprocessor keyring outlook365
