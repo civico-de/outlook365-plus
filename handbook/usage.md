@@ -30,13 +30,13 @@ The settings icon next to a group opens the group's settings in CiviCRM.
 The pane lists the sender and every To, Cc and Bcc recipient, all selected at first.
 
 - An address that belongs to a CiviCRM contact shows the contact's name and a link to the contact.
-- An address that does not has a save button. It creates a contact of type Individual with that email address. The display name from the mail is split at the first space (or, without a space, at the first comma) into first and last name. A name with neither, such as a bare email address, leaves first and last name empty, and CiviCRM shows the email address as the contact's name.
+- An address that does not has a save button. It creates a contact of type Individual with that email address. The display name from the mail is split at the first space (or, without a space, at the first comma) into first and last name. A single word becomes the first name. A name that is an email address leaves first and last name empty, and CiviCRM shows the email address as the contact's name. The new contact's email address is its primary one, with the default location type.
 
 Below the list:
 
 - **Save Contacts** creates contacts for all selected addresses that are not in CiviCRM yet.
 - **Save Contacts to Group** asks for a group: an existing active group, or the name of a new one. It creates the missing contacts and adds every selected person to the group.
-- **Save Email** files the mail in CiviCRM as an activity of type Email. Selected people who are not in CiviCRM yet are created first.
+- **Save Email** files the mail in CiviCRM as an activity of type Email. Selected people who are not in CiviCRM yet are created first, and the list then shows them as known. The button can be used once the list has loaded; after changing the settings it waits for the new site's list. A mail is saved once: after saving, or when the mail already carries the category "Saved in CiviCRM", the button stays disabled and the pane says that the email is saved in CiviCRM.
 
 The Email activity holds:
 

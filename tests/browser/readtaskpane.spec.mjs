@@ -431,6 +431,44 @@ const api3Calls = (log, entity, action) =>
     return body.get("entity") === entity && body.get("action") === action;
   });
 
+// Matches the pane's APIv3 call of one entity and action.
+const isApi3 = (entity, action) => (request) => {
+  const body = new URLSearchParams(request.postData() || "");
+  return body.get("entity") === entity && body.get("action") === action;
+};
+// Holds the matching requests until the returned function is called.
+async function hold(page, matches) {
+  let release;
+  const gate = new Promise((resolve) => {
+    release = resolve;
+  });
+  await page.route(`${h.BASE_URL}/civicrm/ajax/**`, async (route) => {
+    if (matches(route.request())) {
+      await gate;
+    }
+    return route.fallback();
+  });
+  return release;
+}
+// Answers the matching requests with an APIv3 error.
+const refuse = (page, matches) =>
+  page.route(`${h.BASE_URL}/civicrm/ajax/**`, (route) =>
+    matches(route.request())
+      ? route.fulfill({ json: { is_error: 1, error_message: "refused by the test" } })
+      : route.fallback(),
+  );
+// Whether Save Email can be used, as the browser and assistive technology see it.
+async function expectSaveEmail(page, enabled) {
+  const button = page.getByRole("button", { name: "Save Email", exact: true });
+  await (enabled ? expect(button).toBeEnabled() : expect(button).toBeDisabled());
+  await expect(button).toHaveAttribute("aria-disabled", String(!enabled));
+}
+// Address, primary flag and default-location flag of a contact's email rows.
+const emailRows = (contactId) =>
+  h.sql(`SELECT e.email, e.is_primary, lt.is_default FROM civicrm_email e
+    JOIN civicrm_location_type lt ON lt.id = e.location_type_id
+    WHERE e.contact_id = ${Number(contactId)} ORDER BY e.id`);
+
 test("save all contacts creates every selected unknown address and reloads", async ({ page }) => {
   const item = message(16, { to: [newcomer("16a"), newcomer("16b")] });
   const log = await open(page, item);
@@ -507,9 +545,7 @@ test("after saving the settings, one Save Email click saves the mail once", asyn
   h.assertNetwork(log, minted.token, key);
 });
 
-test("a sender name without a space or comma leaves first and last name empty", async ({
-  page,
-}) => {
+test("an email address as sender name leaves first and last name empty", async ({ page }) => {
   const bare = { displayName: `bare.${run}@example.org`, emailAddress: `bare.${run}@example.org` };
   const log = await open(page, message(20, { to: [bare] }));
   await expect(rows(page)).toHaveCount(2);
@@ -521,29 +557,148 @@ test("a sender name without a space or comma leaves first and last name empty", 
       FROM civicrm_contact WHERE id = ${Number(created)}`),
   ).toBe(`Individual\t\t\t${bare.emailAddress}`);
   expect(contactsWithEmail(bare.emailAddress)).toEqual([created]);
-  expect(h.sql(`SELECT COUNT(*) FROM civicrm_email WHERE contact_id = ${Number(created)}`)).toBe(
-    "1",
-  );
+  expect(emailRows(created)).toBe(`${bare.emailAddress}\t1\t1`);
   await expect(rows(page).nth(1).locator(".ms-ListItem-secondaryText")).toHaveText(
     bare.emailAddress,
   );
   h.assertNetwork(log, minted.token, key);
 });
 
-test("Save Email on an unconfigured pane opens the settings and sends nothing", async ({
-  page,
-}) => {
+test("an unconfigured pane keeps Save Email disabled and sends nothing", async ({ page }) => {
   const log = await h.openPane(page, "readtaskpane.html", { item: message(21) });
   await expect(page.frameLocator("#office-dialog").locator("#civicrm-url")).toHaveValue(h.BASE_URL);
-  // The user dismisses the dialog without saving.
-  await page.evaluate(() => {
-    window.__officeState.dialog.frame.remove();
-    window.__officeState.dialog = null;
-  });
-  await page.locator(".save-email").click();
-  await expect(page.frameLocator("#office-dialog").locator("#civicrm-url")).toHaveValue(h.BASE_URL);
-  expect((await h.officeState(page)).dialogUrls).toHaveLength(2);
+  await expectSaveEmail(page, false);
   expect(log.requests.filter((r) => r.url().includes("/civicrm/ajax/"))).toEqual([]);
   expect(log.external).toEqual([]);
   expect(log.errors).toEqual([]);
+});
+
+test("a single-word sender name becomes the first name", async ({ page }) => {
+  const solo = { displayName: `Solo${run}`, emailAddress: `solo.${run}@example.org` };
+  const log = await open(page, message(26, { to: [solo] }));
+  await expect(rows(page)).toHaveCount(2);
+  await rows(page).nth(1).locator(".save-contact").click();
+  await expect(page.locator("#saved-contact-help-text")).toBeVisible();
+  const [created] = contactsWithEmail(solo.emailAddress);
+  expect(
+    h.sql(`SELECT COALESCE(first_name, ''), COALESCE(last_name, ''), display_name
+      FROM civicrm_contact WHERE id = ${Number(created)}`),
+  ).toBe(`${solo.displayName}\t\t${solo.displayName}`);
+  expect(emailRows(created)).toBe(`${solo.emailAddress}\t1\t1`);
+  h.assertNetwork(log, minted.token, key);
+});
+
+const save = (page) => page.locator(".save-email");
+const savedNotice = (page) => page.locator("#saved-email-help-text");
+const activityCreates = (log) =>
+  log.requests.filter((r) => r.url().includes("/civicrm/ajax/api4/Activity/create"));
+
+test("Save Email stays disabled until the contact lookup is done", async ({ page }) => {
+  const release = await hold(page, isApi3("Email", "get"));
+  const log = await open(page, message(22));
+  await expect(page.locator("#loadingContacts")).toBeVisible();
+  await expectSaveEmail(page, false);
+  release();
+  await expect(rows(page)).toHaveCount(2);
+  await expectSaveEmail(page, true);
+  await expect(page.locator("#loadingContacts")).toBeHidden();
+  expect(activityCreates(log)).toEqual([]);
+  h.assertNetwork(log, minted.token, key);
+});
+
+test("a failed contact lookup leaves Save Email disabled", async ({ page }) => {
+  await refuse(page, isApi3("Email", "get"));
+  const log = await open(page, message(23));
+  await expect(page.locator(".ms-Dialog")).toBeVisible();
+  await expect(rows(page)).toHaveCount(0);
+  await expectSaveEmail(page, false);
+  await expect(page.locator("#loadingContacts")).toBeHidden();
+  expect(activityCreates(log)).toEqual([]);
+  h.assertNetwork(log, minted.token, key);
+});
+
+// Saves the settings dialog unchanged; the pane takes that as a new configuration.
+async function resaveSettings(page) {
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  const dialog = page.frameLocator("#office-dialog");
+  await expect(dialog.locator("#settings-done")).toBeEnabled();
+  await dialog.locator("#settings-done").click();
+  await expect(page.locator("#office-dialog")).toHaveCount(0);
+}
+
+test("saved settings clear the list until the new lookup is done", async ({ page }) => {
+  const log = await open(page, message(27));
+  await expect(rows(page)).toHaveCount(2);
+  await expectSaveEmail(page, true);
+  const release = await hold(page, isApi3("Email", "get"));
+  await resaveSettings(page);
+  await expect(rows(page)).toHaveCount(0);
+  await expectSaveEmail(page, false);
+  release();
+  await expect(rows(page)).toHaveCount(2);
+  await expectSaveEmail(page, true);
+  expect(activityCreates(log)).toEqual([]);
+  h.assertNetwork(log, minted.token, key);
+});
+
+test("a failed lookup after saved settings leaves no stale list", async ({ page }) => {
+  const log = await open(page, message(28));
+  await expect(rows(page)).toHaveCount(2);
+  await refuse(page, isApi3("Email", "get"));
+  await resaveSettings(page);
+  await expect(page.locator(".ms-Dialog")).toBeVisible();
+  await expect(rows(page)).toHaveCount(0);
+  await expectSaveEmail(page, false);
+  expect(activityCreates(log)).toEqual([]);
+  h.assertNetwork(log, minted.token, key);
+});
+
+test("a saved mail cannot be saved again", async ({ page }) => {
+  const item = message(24);
+  const log = await open(page, item);
+  await expect(rows(page)).toHaveCount(2);
+  await expect(savedNotice(page)).toBeHidden();
+  await save(page).click();
+  await expect.poll(async () => (await h.officeState(page)).categories).toEqual([SAVED]);
+  await expect(savedNotice(page)).toBeVisible();
+  await expect(rows(page).nth(1)).toHaveClass(/not_to_save/);
+  await expectSaveEmail(page, false);
+  expect(activityCreates(log)).toHaveLength(1);
+  expect(api3Calls(log, "Contact", "create")).toHaveLength(1);
+  expect(contactsWithEmail(newcomer(24).emailAddress)).toHaveLength(1);
+  h.assertNetwork(log, minted.token, key);
+});
+
+test("a double click while the save is pending saves the mail once", async ({ page }) => {
+  const item = message(25);
+  const release = await hold(page, (r) => r.url().endsWith("/civicrm/ajax/api4/Activity/create"));
+  const log = await open(page, item);
+  await expect(rows(page)).toHaveCount(2);
+  await save(page).dblclick();
+  await expect.poll(() => activityCreates(log).length).toBe(1);
+  await expectSaveEmail(page, false);
+  release();
+  await expect.poll(async () => (await h.officeState(page)).categories).toEqual([SAVED]);
+  await expect(rows(page).nth(1)).toHaveClass(/not_to_save/);
+  await expectSaveEmail(page, false);
+  expect(activityCreates(log)).toHaveLength(1);
+  expect(api3Calls(log, "Contact", "create")).toHaveLength(1);
+  expect(h.sql(`SELECT COUNT(*) FROM civicrm_activity WHERE subject = '${item.subject}'`)).toBe(
+    "1",
+  );
+  expect(contactsWithEmail(newcomer(25).emailAddress)).toHaveLength(1);
+  h.assertNetwork(log, minted.token, key);
+});
+
+test("a mail already filed in CiviCRM opens with Save Email disabled", async ({ page }) => {
+  const log = await h.openPane(page, "readtaskpane.html", {
+    item: message(29),
+    roaming: { civicrm_url: h.BASE_URL, civicrm_token: minted.token },
+    categories: [SAVED],
+    masterCategories: [SAVED],
+  });
+  await expect(rows(page)).toHaveCount(2);
+  await expect(savedNotice(page)).toBeVisible();
+  await expectSaveEmail(page, false);
+  h.assertNetwork(log, minted.token, key);
 });

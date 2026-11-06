@@ -6,6 +6,11 @@
     var requiredAttendees = Office.context.mailbox.item;
     var config = false;
     var saveDialog = null
+    // Save Email needs a contact list drawn for the current config and no save in flight.
+    var listReady = false;
+    var savingEmail = false;
+    var emailSaved = false;
+    var listDrawing = 0;
 
     var myLanguage = Office.context.displayLanguage;
     var UIText = UIStrings.getLocaleStrings(myLanguage);
@@ -114,10 +119,11 @@
             url: normalizeUrl(settings.url),
             token: settings.token || (sameSite ? previous.token : '')
           };
-          await setConfig(config, function (result) {
+          clearContacts();
+          await setConfig(config, async function (result) {
             settingsDialog.close();
             settingsDialog = null;
-            reset();
+            await reset();
             showContacts()
           });
         });
@@ -357,7 +363,31 @@
       return {"exist": exist, "contact_url": contact_url, "contact_name": contact_name, "contact_id": contact_id}
     }
 
+    // Contact IDs belong to one site, so a list is dropped as soon as the config changes.
+    function clearContacts() {
+      listDrawing++;
+      listReady = false;
+      $("#contacts").empty();
+      updateSaveEmail();
+    }
+
+    function updateSaveEmail() {
+      let usable = listReady && !savingEmail && !emailSaved;
+      $('.save-email').prop('disabled', !usable).attr('aria-disabled', String(!usable));
+      $('#saved-email-help-text').prop('hidden', !emailSaved);
+    }
+
+    function hasSavedCategory() {
+      return new Promise(resolve => requiredAttendees.categories.getAsync(result => resolve(
+        result.status !== Office.AsyncResultStatus.Failed
+        && result.value.some(category => category.displayName === 'Saved in CiviCRM')
+      )));
+    }
+
     async function showContacts() {
+      clearContacts();
+      let drawing = listDrawing;
+      $('#loadingContacts').show();
 
       let list = $('<ul class="ms-List">');
 
@@ -366,10 +396,18 @@
       let addresses = [requiredAttendees.from].concat(requiredAttendees.to, requiredAttendees.cc, requiredAttendees.bcc);
       for (const val of addresses) {
         let res = await checkContact(val)
+        if (drawing !== listDrawing) {
+          return;
+        }
         if (!res) {
+          $('#loadingContacts').hide();
           return;
         }
         list.append(getListItem(val, res));
+      }
+      let filed = await hasSavedCategory();
+      if (drawing !== listDrawing) {
+        return;
       }
 
       let html = '<button class="ms-Button ms-Button--small save-contact-all">' +
@@ -388,48 +426,69 @@
       $(".save-contact").on('click', saveContact)
       $(".save-contact-all-group").on('click', confirmSaveAllContactInGroup)
       $(".save-contact-all").on('click', confirmSaveAllContact)
-
+      $('#loadingContacts').hide();
+      emailSaved = emailSaved || filed;
+      listReady = true;
+      updateSaveEmail();
     }
 
     async function saveEmail() {
-      if (!config) {
-        openSettingsDialog();
+      if (savingEmail || emailSaved || !listReady) {
         return;
       }
-      var emailBody = null
-      await requiredAttendees.body.getAsync(
-        "html",
-        async function callback(result) {
-          emailBody = result['value']
+      savingEmail = true;
+      updateSaveEmail();
+      let site = config;
+      let createdContacts = false;
+      try {
+        createdContacts = await fileEmail(site);
+      } finally {
+        savingEmail = false;
+        updateSaveEmail();
+      }
+      // Contacts created on the way are known now; their rows must not offer to create them again.
+      if (createdContacts && config === site) {
+        await showContacts();
+      }
+    }
 
-          var targetContactIds = []
-          var pendingContacts = []
+    // Saves the selected contacts and the mail; resolves whether it created contacts.
+    async function fileEmail(site) {
+      let result = await new Promise(resolve => requiredAttendees.body.getAsync("html", resolve));
+      // A settings change has dropped the list these contacts came from.
+      if (config !== site) {
+        return false;
+      }
+      var emailBody = result['value']
+      var targetContactIds = []
+      var pendingContacts = []
 
-          $('.ms-List').children().each(function (index) {
-             let contact = $(this).children(".ms-ListItem-actions").children(".ms-ListItem-action")
-             // name,email,already saved
-             if ($(this).hasClass('is-selected')) {
-               if ($(this).hasClass('to_save')) {
-                 pendingContacts.push(
-                   saveContactToCRM({"name": contact.attr('data-civicrm-name'), "email": contact.attr('data-civicrm-email')})
-                 );
-               } else {
-                 targetContactIds.push(contact.data('civicrm-id'));
-               }
-             }
-          });
-
-          // A failed save has shown the error dialog; the activity would lack that contact.
-          let savedIds = await Promise.all(pendingContacts);
-          if (savedIds.includes(null)) {
-            return;
+      $('.ms-List').children().each(function (index) {
+        let contact = $(this).children(".ms-ListItem-actions").children(".ms-ListItem-action")
+        if ($(this).hasClass('is-selected')) {
+          if ($(this).hasClass('to_save')) {
+            pendingContacts.push(
+              saveContactToCRM({"name": contact.attr('data-civicrm-name'), "email": contact.attr('data-civicrm-email')})
+            );
+          } else {
+            targetContactIds.push(contact.data('civicrm-id'));
           }
-          targetContactIds = targetContactIds.concat(savedIds);
+        }
+      });
 
-          if (await pushEmailActivity(requiredAttendees.subject, emailBody, new Date(requiredAttendees.dateTimeCreated), targetContactIds)) {
-            addSavedCategoryToCurrentMessage();
-          }
-        });
+      // A failed save has shown the error dialog; the activity would lack that contact.
+      let savedIds = await Promise.all(pendingContacts);
+      let created = savedIds.some(id => id !== null);
+      if (savedIds.includes(null) || config !== site) {
+        return created;
+      }
+      targetContactIds = targetContactIds.concat(savedIds);
+
+      if (await pushEmailActivity(requiredAttendees.subject, emailBody, new Date(requiredAttendees.dateTimeCreated), targetContactIds)) {
+        emailSaved = true;
+        addSavedCategoryToCurrentMessage();
+      }
+      return created;
     }
 
     function addSavedCategoryToCurrentMessage() {
@@ -505,9 +564,9 @@
       if (separatorIndex === -1) {
         separatorIndex = name.indexOf(',');
       }
-      // A name with neither, such as a bare email address, is no first or last name.
+      // A single word is a first name, as in CiviCRM's own inbound mail; an email address is no name.
       if (separatorIndex === -1) {
-        return {firstName: '', lastName: ''};
+        return {firstName: name.includes('@') ? '' : name, lastName: ''};
       }
       return {firstName: name.substring(0, separatorIndex), lastName: name.substring(separatorIndex + 1)};
     }

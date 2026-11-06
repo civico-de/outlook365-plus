@@ -69,9 +69,12 @@
     <div class="ms-CommandBar-mainArea">
       <h2>{ts}Save Email{/ts}</h2>
       <p>{ts}Click the following button to save this email in CiviCRM as an Activity{/ts}</p>
-      <button class="ms-Button ms-Button--medium save-email">
+      <button class="ms-Button ms-Button--medium save-email" disabled aria-disabled="true">
         <span class="ms-Button-label">{ts}Save Email{/ts}</span>
       </button>
+      <div role="status">
+        <p id="saved-email-help-text" hidden>{ts}This email is saved in CiviCRM.{/ts}</p>
+      </div>
       </div>
 
   </section>

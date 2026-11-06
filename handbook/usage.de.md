@@ -30,13 +30,13 @@ Das Einstellungs-Symbol neben einer Gruppe öffnet die Einstellungen der Gruppe 
 Der Bereich listet den Absender und alle Empfänger aus An, Cc und Bcc auf, zunächst alle ausgewählt.
 
 - Eine Adresse, die zu einem CiviCRM-Kontakt gehört, zeigt den Namen des Kontakts und einen Link zu ihm.
-- Eine Adresse ohne Kontakt hat einen Speichern-Knopf. Er legt einen Kontakt vom Typ Einzelperson mit dieser E-Mail-Adresse an. Der Anzeigename aus der Mail wird am ersten Leerzeichen (oder, ohne Leerzeichen, am ersten Komma) in Vor- und Nachname geteilt. Bei einem Namen ohne beides, etwa einer nackten E-Mail-Adresse, bleiben Vor- und Nachname leer, und CiviCRM zeigt die E-Mail-Adresse als Namen des Kontakts.
+- Eine Adresse ohne Kontakt hat einen Speichern-Knopf. Er legt einen Kontakt vom Typ Einzelperson mit dieser E-Mail-Adresse an. Der Anzeigename aus der Mail wird am ersten Leerzeichen (oder, ohne Leerzeichen, am ersten Komma) in Vor- und Nachname geteilt. Ein einzelnes Wort wird zum Vornamen. Ist der Name eine E-Mail-Adresse, bleiben Vor- und Nachname leer, und CiviCRM zeigt die E-Mail-Adresse als Namen des Kontakts. Die E-Mail-Adresse des neuen Kontakts ist seine primäre, mit dem Standard-Adresstyp.
 
 Unter der Liste:
 
 - **Save Contacts** legt Kontakte für alle ausgewählten Adressen an, die noch nicht in CiviCRM sind.
 - **Save Contacts to Group** fragt nach einer Gruppe: einer bestehenden aktiven Gruppe oder dem Namen einer neuen. Es legt die fehlenden Kontakte an und fügt alle ausgewählten Personen der Gruppe hinzu.
-- **Save Email** legt die Mail in CiviCRM als Aktivität vom Typ E-Mail ab. Ausgewählte Personen, die noch nicht in CiviCRM sind, werden vorher angelegt.
+- **Save Email** legt die Mail in CiviCRM als Aktivität vom Typ E-Mail ab. Ausgewählte Personen, die noch nicht in CiviCRM sind, werden vorher angelegt, und die Liste zeigt sie danach als bekannt. Der Knopf ist nutzbar, sobald die Liste geladen ist; nach einer Änderung der Einstellungen wartet er auf die Liste der neuen Website. Eine Mail wird einmal gespeichert: Nach dem Speichern, oder wenn die Mail schon die Kategorie „Saved in CiviCRM“ trägt, bleibt der Knopf deaktiviert, und der Bereich zeigt „This email is saved in CiviCRM.“ an.
 
 Die E-Mail-Aktivität enthält:
 

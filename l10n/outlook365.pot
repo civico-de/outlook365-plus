@@ -63,6 +63,10 @@ msgid "Save Email"
 msgstr "Sauvegarder le courriel"
 
 #: ./templates/CRM/Outlook365/Page/ReadTaskpane.tpl
+msgid "This email is saved in CiviCRM."
+msgstr ""
+
+#: ./templates/CRM/Outlook365/Page/ReadTaskpane.tpl
 msgid "Click the following button to save this email in CiviCRM as an Activity"
 msgstr "Cliquez sur le bouton suivant pour enregistrer ce courriel dans CiviCRM en tant qu'activité"
 

@@ -7,12 +7,19 @@ release of this fork.
 
 ### Fixed
 
-- One click on "Save Email" in the read pane saves the mail once. After a contact or the settings
-  had been saved, it created the Email activity twice.
-- A contact saved from an address without a name, or with a name lacking a space or comma, keeps
-  first and last name empty and shows its email address as its name, instead of the last name
-  "Unknown".
-- "Save Email" in a read pane that is not configured yet opens the settings.
+- A mail is saved in CiviCRM once. "Save Email" created the Email activity twice per click after a
+  contact or the settings had been saved, and again on every further click, creating the unknown
+  contacts again each time. It is now disabled while the save runs and once the mail is saved or
+  carries the category "Saved in CiviCRM", and the pane says so.
+- "Save Email" in the read pane can only be used once the contact list has loaded. A click while
+  the list was loading, after the lookup had failed or before the add-in was configured filed the
+  mail without its contacts.
+- Saving the settings clears the read pane's contact list until the lookup on the configured site
+  has finished, so no contact of the previous site is saved with the new site's credentials.
+- Contacts created by "Save Email" show as known in the list afterwards.
+- A contact saved from a sender name that is an email address keeps first and last name empty and
+  shows its email address as its name, and a single-word name becomes the first name, instead of
+  the last name "Unknown".
 - The extension's documentation link points to the handbook.
 
 ## [3.1.2] - 2026-10-22
