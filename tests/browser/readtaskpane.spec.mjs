@@ -721,11 +721,14 @@ test("a client without the categories API lists the contacts and saves the mail"
   h.assertNetwork(log, minted.token, key);
 });
 
-test("a failed category lookup shows the error and keeps Save Email disabled", async ({ page }) => {
+test("a failed category lookup shows the error but keeps the contacts usable", async ({ page }) => {
   const log = await open(page, message(31, { categoriesFail: true }));
   await expect(page.locator(".ms-Dialog")).toBeVisible();
   await expect(page.locator("#loadingContacts")).toBeHidden();
+  await expect(rows(page)).toHaveCount(2);
+  await expect(rows(page).nth(1).locator(".save-contact")).toBeEnabled();
   await expectSaveEmail(page, false);
+  await expect(savedNotice(page)).toBeHidden();
   expect(activityCreates(log)).toEqual([]);
   h.assertNetwork(log, minted.token, key);
 });

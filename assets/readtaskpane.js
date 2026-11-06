@@ -10,6 +10,8 @@
     var listReady = false;
     var savingEmail = false;
     var emailSaved = false;
+    // False when Outlook could not read the mail's categories, so a filed mail is not offered again.
+    var filedKnown = true;
     var listDrawing = 0;
 
     var myLanguage = Office.context.displayLanguage;
@@ -372,7 +374,7 @@
     }
 
     function updateSaveEmail() {
-      let usable = listReady && !savingEmail && !emailSaved;
+      let usable = listReady && filedKnown && !savingEmail && !emailSaved;
       $('.save-email').prop('disabled', !usable).attr('aria-disabled', String(!usable));
       $('#saved-email-help-text').prop('hidden', !emailSaved);
     }
@@ -419,11 +421,6 @@
       if (drawing !== listDrawing) {
         return;
       }
-      if (filed === null) {
-        $('#loadingContacts').hide();
-        openDialog(dialogComponent);
-        return;
-      }
 
       let html = '<button class="ms-Button ms-Button--small save-contact-all">' +
         '<span class="ms-Button-label">' + UIText.SaveContactInGroupScreen.Save + '</span>' +
@@ -442,9 +439,13 @@
       $(".save-contact-all-group").on('click', confirmSaveAllContactInGroup)
       $(".save-contact-all").on('click', confirmSaveAllContact)
       $('#loadingContacts').hide();
-      emailSaved = emailSaved || filed;
+      filedKnown = filed !== null;
+      emailSaved = emailSaved || filed === true;
       listReady = true;
       updateSaveEmail();
+      if (!filedKnown) {
+        openDialog(dialogComponent);
+      }
     }
 
     async function saveEmail() {

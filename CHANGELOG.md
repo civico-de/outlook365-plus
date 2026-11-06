@@ -19,7 +19,8 @@ release of this fork.
 - Contacts created by "Save Email" show as known in the list afterwards.
 - The read pane works on Outlook clients without item categories (before Mailbox 1.8); there
   the mail gets no "Saved in CiviCRM" category. When Outlook cannot read the categories, the pane
-  shows an error instead of offering an already filed mail for saving again.
+  shows an error and keeps "Save Email" disabled instead of offering an already filed mail for
+  saving again; the contacts stay usable.
 - A contact saved while "Save Email" reads the mail no longer lets the mail be filed without its
   contacts; the click is dropped and the redrawn list offers saving again.
 - A contact saved from a sender name that is an email address keeps first and last name empty and
