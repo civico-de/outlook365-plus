@@ -61,6 +61,11 @@ export function officeStub(fixture) {
         },
       });
     const message = fixture.item;
+    const mailboxAtLeast = (version) => {
+      const [major, minor] = (fixture.requirementSets.Mailbox || "1.0").split(".").map(Number);
+      const [wantMajor, wantMinor] = version.split(".").map(Number);
+      return major > wantMajor || (major === wantMajor && minor >= wantMinor);
+    };
     const item =
       message.mode === "compose"
         ? strict("item", { to: recipients("to"), cc: recipients("cc"), bcc: recipients("bcc") })
@@ -71,18 +76,36 @@ export function officeStub(fixture) {
             bcc: message.bcc,
             subject: message.subject,
             dateTimeCreated: new Date(message.dateTimeCreated),
-            body: strict("body", { getAsync: (type, cb) => cb(done(message.body)) }),
-            categories: strict("categories", {
-              getAsync: (cb) => cb(done(state.categories.map((displayName) => ({ displayName })))),
-              // Outlook refuses a category missing from the master list with 9044.
-              addAsync: (names, cb) => {
-                if (!names.every((n) => state.masterCategories.includes(n))) {
-                  cb({ status: "failed", error: { code: 9044, message: "not in master list" } });
+            // holdBody keeps the body read pending until the test calls releaseBody().
+            body: strict("body", {
+              getAsync: (type, cb) => {
+                if (!message.holdBody) {
+                  cb(done(message.body));
                   return;
                 }
-                state.categories.push(...names);
-                cb(done());
+                state.bodyRead = true;
+                state.releaseBody = () => cb(done(message.body));
               },
+            }),
+            // Outlook offers item.categories from Mailbox 1.8 on.
+            ...(mailboxAtLeast("1.8") && {
+              categories: strict("categories", {
+                getAsync: (cb) =>
+                  cb(
+                    message.categoriesFail
+                      ? { status: "failed", error: { code: 9002, message: "internal error" } }
+                      : done(state.categories.map((displayName) => ({ displayName }))),
+                  ),
+                // Outlook refuses a category missing from the master list with 9044.
+                addAsync: (names, cb) => {
+                  if (!names.every((n) => state.masterCategories.includes(n))) {
+                    cb({ status: "failed", error: { code: 9044, message: "not in master list" } });
+                    return;
+                  }
+                  state.categories.push(...names);
+                  cb(done());
+                },
+              }),
             }),
           });
 

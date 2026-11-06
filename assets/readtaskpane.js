@@ -377,10 +377,20 @@
       $('#saved-email-help-text').prop('hidden', !emailSaved);
     }
 
+    // Item categories need Mailbox 1.8; an older client can neither read nor set the tag.
+    function hasCategories() {
+      return Office.context.requirements.isSetSupported('Mailbox', '1.8');
+    }
+
+    // Resolves null when Outlook cannot tell, so an unverified mail is not offered for saving.
     function hasSavedCategory() {
+      if (!hasCategories()) {
+        return Promise.resolve(false);
+      }
       return new Promise(resolve => requiredAttendees.categories.getAsync(result => resolve(
-        result.status !== Office.AsyncResultStatus.Failed
-        && result.value.some(category => category.displayName === 'Saved in CiviCRM')
+        result.status === Office.AsyncResultStatus.Failed
+          ? null
+          : result.value.some(category => category.displayName === 'Saved in CiviCRM')
       )));
     }
 
@@ -407,6 +417,11 @@
       }
       let filed = await hasSavedCategory();
       if (drawing !== listDrawing) {
+        return;
+      }
+      if (filed === null) {
+        $('#loadingContacts').hide();
+        openDialog(dialogComponent);
         return;
       }
 
@@ -439,9 +454,10 @@
       savingEmail = true;
       updateSaveEmail();
       let site = config;
+      let drawn = listDrawing;
       let createdContacts = false;
       try {
-        createdContacts = await fileEmail(site);
+        createdContacts = await fileEmail(site, drawn);
       } finally {
         savingEmail = false;
         updateSaveEmail();
@@ -453,10 +469,10 @@
     }
 
     // Saves the selected contacts and the mail; resolves whether it created contacts.
-    async function fileEmail(site) {
+    async function fileEmail(site, drawn) {
       let result = await new Promise(resolve => requiredAttendees.body.getAsync("html", resolve));
-      // A settings change has dropped the list these contacts came from.
-      if (config !== site) {
+      // A settings change or a contact save has redrawn the list the selection came from.
+      if (config !== site || listDrawing !== drawn) {
         return false;
       }
       var emailBody = result['value']
@@ -492,6 +508,9 @@
     }
 
     function addSavedCategoryToCurrentMessage() {
+      if (!hasCategories()) {
+        return;
+      }
       // skip if the message has sent to CiviCRM
       Office.context.mailbox.item.categories.getAsync(function (asyncResult) {
         if (asyncResult.status === Office.AsyncResultStatus.Failed) {

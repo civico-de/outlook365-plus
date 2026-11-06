@@ -48,4 +48,4 @@ The Email activity holds:
 | Added by | The contact the token belongs to |
 | With contact | The selected people |
 
-After the activity is saved, the mail gets the Outlook category **Saved in CiviCRM**. The add-in creates the category in your mailbox the first time it needs it.
+After the activity is saved, the mail gets the Outlook category **Saved in CiviCRM**. The add-in creates the category in your mailbox the first time it needs it. Outlook clients without category support (before Mailbox requirement set 1.8) save the mail without the category, so the pane there cannot tell that a mail was already saved.

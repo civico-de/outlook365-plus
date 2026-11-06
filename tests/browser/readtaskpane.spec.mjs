@@ -268,7 +268,7 @@ test("a client without DialogApi 1.2 shows an error instead of an empty group li
   const log = await h.openPane(page, "readtaskpane.html", {
     item: message(9),
     roaming: { civicrm_url: h.BASE_URL, civicrm_token: minted.token },
-    requirementSets: { DialogApi: "1.1" },
+    requirementSets: { DialogApi: "1.1", Mailbox: "1.8" },
   });
   await expect(rows(page)).toHaveCount(2);
   await page.locator(".save-contact-all-group").click();
@@ -700,5 +700,51 @@ test("a mail already filed in CiviCRM opens with Save Email disabled", async ({ 
   await expect(rows(page)).toHaveCount(2);
   await expect(savedNotice(page)).toBeVisible();
   await expectSaveEmail(page, false);
+  h.assertNetwork(log, minted.token, key);
+});
+
+test("a client without the categories API lists the contacts and saves the mail", async ({
+  page,
+}) => {
+  const item = message(30);
+  const log = await h.openPane(page, "readtaskpane.html", {
+    item,
+    roaming: { civicrm_url: h.BASE_URL, civicrm_token: minted.token },
+    requirementSets: { DialogApi: "1.2", Mailbox: "1.5" },
+  });
+  await expect(rows(page)).toHaveCount(2);
+  await expectSaveEmail(page, true);
+  await save(page).click();
+  await expect(savedNotice(page)).toBeVisible();
+  await expectSaveEmail(page, false);
+  expect(activityCreates(log)).toHaveLength(1);
+  h.assertNetwork(log, minted.token, key);
+});
+
+test("a failed category lookup shows the error and keeps Save Email disabled", async ({ page }) => {
+  const log = await open(page, message(31, { categoriesFail: true }));
+  await expect(page.locator(".ms-Dialog")).toBeVisible();
+  await expect(page.locator("#loadingContacts")).toBeHidden();
+  await expectSaveEmail(page, false);
+  expect(activityCreates(log)).toEqual([]);
+  h.assertNetwork(log, minted.token, key);
+});
+
+test("a list redrawn while the mail body is read files nothing", async ({ page }) => {
+  const item = message(32, { holdBody: true });
+  const log = await open(page, item);
+  await expect(rows(page)).toHaveCount(2);
+  await save(page).click();
+  await expect.poll(async () => (await h.officeState(page)).bodyRead).toBe(true);
+  // Saving a contact redraws the list; its lookup is held, so the list stays empty.
+  const release = await hold(page, isApi3("Email", "get"));
+  await rows(page).nth(1).locator(".save-contact").click();
+  await expect(rows(page)).toHaveCount(0);
+  await page.evaluate(() => window.__officeState.releaseBody());
+  release();
+  await expect(rows(page)).toHaveCount(2);
+  await expectSaveEmail(page, true);
+  await expect(savedNotice(page)).toBeHidden();
+  expect(activityCreates(log)).toEqual([]);
   h.assertNetwork(log, minted.token, key);
 });

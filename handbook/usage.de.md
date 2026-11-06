@@ -48,4 +48,4 @@ Die E-Mail-Aktivität enthält:
 | Hinzugefügt von | Der Kontakt, dem das Token gehört |
 | Mit Kontakt | Die ausgewählten Personen |
 
-Nach dem Speichern bekommt die Mail die Outlook-Kategorie **Saved in CiviCRM**. Das Add-in legt die Kategorie in Ihrem Postfach an, wenn es sie zum ersten Mal braucht.
+Nach dem Speichern bekommt die Mail die Outlook-Kategorie **Saved in CiviCRM**. Das Add-in legt die Kategorie in Ihrem Postfach an, wenn es sie zum ersten Mal braucht. Outlook-Clients ohne Kategorien (vor Mailbox-Anforderungssatz 1.8) speichern die Mail ohne Kategorie; dort erkennt der Bereich nicht, dass eine Mail schon gespeichert ist.

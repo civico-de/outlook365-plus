@@ -17,6 +17,11 @@ release of this fork.
 - Saving the settings clears the read pane's contact list until the lookup on the configured site
   has finished, so no contact of the previous site is saved with the new site's credentials.
 - Contacts created by "Save Email" show as known in the list afterwards.
+- The read pane works on Outlook clients without item categories (before Mailbox 1.8); there
+  the mail gets no "Saved in CiviCRM" category. When Outlook cannot read the categories, the pane
+  shows an error instead of offering an already filed mail for saving again.
+- A contact saved while "Save Email" reads the mail no longer lets the mail be filed without its
+  contacts; the click is dropped and the redrawn list offers saving again.
 - A contact saved from a sender name that is an email address keeps first and last name empty and
   shows its email address as its name, and a single-word name becomes the first name, instead of
   the last name "Unknown".
