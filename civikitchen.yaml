@@ -87,10 +87,10 @@ policy:
       sha256: 74e5d63d0c839f5c5fdd074f6f32b47dc7c8fb43a3288776a26b9ae7c2e981ae
       reason: The registry download races outlook365's own postInstall on a clean boot (measured, 2/2); the digest-pinned path refreshes the extension container and does not
     - key: keyring
-      version: '0.1.0-alpha.2'
+      version: '0.1.0-alpha.3'
       release:
         repository: civico-de/keyring
-        tag: v0.1.0-alpha.2
-        asset: keyring-0.1.0-alpha.2.zip
-      sha256: ceff3a586902e654c89b5398ad0bb01d37e596582b3b8d0812e0bfa6f9ec3044
+        tag: v0.1.0-alpha.3
+        asset: keyring-0.1.0-alpha.3.zip
+      sha256: 6f4b8b14bde79e8de99f50c5315b90fd976e0f79b3de2df6c8c91d248b82220b
       reason: private repository, no registry serves it
