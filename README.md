@@ -131,11 +131,10 @@ npm run test:e2e
 ```
 
 plus `ckinit --check` for template drift and a disable/enable/uninstall/install
-pass (`lifecycle: true`). The e2e job mounts `keyring` from a private checkout
-and boots the CI stack with port 8200 published; `dataprocessor` resolves
-through the pinned archive in `civikitchen.yaml` (`policy.extension_sources`),
-same as the `ci` job's own stack. The browser suite runs in civikitchen's
-`playwright` job on its own stack (port 8080, `keyring` as `sibling_repo`).
+pass (`lifecycle: true`). `keyring` and `dataprocessor` resolve through the
+archives pinned in `civikitchen.yaml` (`policy.extension_sources`) in every job.
+The e2e job boots the CI stack with port 8200 published; the browser suite runs
+in civikitchen's `playwright` job on its own stack (port 8080).
 
 ## Documentation
 
