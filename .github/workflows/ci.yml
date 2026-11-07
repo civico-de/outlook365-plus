@@ -46,7 +46,10 @@ jobs:
     # `playwright` runs tests/browser/: the real task pane pages in Chromium,
     # office.js replaced by a stub, against the same stack with keyring mounted.
     # `e2e` runs tests/e2e/, the fork's only test of its own code (it owns no PHP).
+    #
+    # Public repo: GitHub-hosted runners only, since fork PRs would run on a self-hosted one.
     with:
+      runs_on: ubuntu-latest
       lifecycle: true
       playwright: true
       e2e: tests/e2e/run.sh
