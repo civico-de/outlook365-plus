@@ -103,7 +103,7 @@ The suite needs `curl`, `python3` and `node` on the host; `tests/e2e/40-uistring
 resolves `assets/UIStrings.js` with node and runs without the stack.
 
 `tests/browser/` loads `civicrm/outlook365/taskpane.html` and `readtaskpane.html`
-from the stack in Chromium. `office.js` is replaced by `tests/browser/office-stub.js`,
+from the stack in Chromium. `office.js` is replaced by `tests/browser/office-stub.mjs`,
 which holds the fixture mail and the settings and throws on any Office member it
 does not model; dialogs open as iframes that may call only what Microsoft's dialog
 API allows there. Each run mints its own keyring token for the seeded

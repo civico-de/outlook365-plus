@@ -11,6 +11,7 @@
   <urls>
     <url desc="Main Extension Page">https://github.com/civico-de/outlook365-plus</url>
     <url desc="Documentation">https://civico-de.github.io/outlook365-plus/</url>
+    <url desc="Support">https://github.com/civico-de/outlook365-plus/issues</url>
     <url desc="Upstream">https://lab.civicrm.org/extensions/outlook365</url>
     <url desc="Licensing">http://www.gnu.org/licenses/agpl-3.0.html</url>
   </urls>
@@ -20,6 +21,11 @@
   <compatibility>
     <ver>6.17</ver>
   </compatibility>
+  <php_compatibility mode="list">
+    <ver>8.2</ver>
+    <ver>8.3</ver>
+    <ver>8.4</ver>
+  </php_compatibility>
   <comments>Funded by MAKOA. Developed and supported by CiviCoop and Agileware. Forked by civico GmbH: the credential travels in the X-Civi-Auth header.</comments>
   <civix>
     <namespace>CRM/Outlook365</namespace>

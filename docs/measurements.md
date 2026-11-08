@@ -12,7 +12,7 @@ Every statement here was produced by running `tests/e2e/` against the
 | CMS | Standalone (`standaloneusers`) |
 | PHP | 8.4.25 |
 | Smarty | 5.7.0 |
-| Image | `ghcr.io/jfilter/civikitchen:v1` |
+| Image | `ghcr.io/civico-de/civikitchen:v1` |
 | Compose project | `outlook365`, app on `http://localhost:8200` |
 | Extensions enabled | `authx`, `dataprocessor`, `keyring`, `outlook365` |
 
@@ -44,8 +44,8 @@ upgrader.
 
 Both task panes render under Smarty 5 with no unrendered tags left in the
 output (`tests/e2e/20-install.sh` greps the served HTML for `{ts`, `{literal`,
-`{crmScope` and `{$`). The `smarty-v2@1.0.3` mixin the extension already
-declared is what carries the v2 syntax in its templates.
+`{crmScope` and `{$`). The `smarty@1.0.3` mixin carries the v2 syntax in
+its templates.
 
 `<compatibility><ver>` is therefore **6.17** — the version this was measured
 on. Upstream's `5.38` is not a claim this fork can defend: it predates both
@@ -165,7 +165,7 @@ the task pane is served by the CiviCRM site it talks to, and the settings
 dialog is prefilled with that site's own base URL. The site URL field must be
 that same origin.
 
-## Not covered by the suite: the settings dialog
+## The settings dialog
 
 The task pane opens `outlook365/settings/dialog.html` through
 `Office.context.ui.displayDialogAsync`, and upstream passed the stored
@@ -174,15 +174,17 @@ the token straight into the CiviCRM host's access log, defeating everything
 above. The dialog now receives `{url, hasToken}` and never the token itself; an
 empty token field means "keep the stored one".
 
-There is **no automated check** for this: the code path only runs inside an
-Office host, which the suite has no way to drive. The invariant to re-check by
-hand when touching `openSettingsDialog` in either task pane: nothing secret may
-be concatenated into `settingsDialogUrl`.
+The browser suite checks this against a stub of `office.js`
+(`tests/browser/office-stub.mjs`): `taskpane.spec.mjs` asserts that no dialog
+URL contains the token, `readtaskpane.spec.mjs` that the dialog URL carries no
+query string at all. A real Office host is not driven, so the invariant still
+holds by hand too: nothing secret may be concatenated into `settingsDialogUrl`.
 
 ## What was not measured
 
-- Behaviour inside a real Outlook client. Everything here is curl against the
-  same request shapes; no Office host was driven.
+- Behaviour inside a real Outlook client. The e2e suite is curl against the
+  same request shapes, and the browser suite runs the task panes against a stub
+  of `office.js`; no Office host was driven.
 - Any CiviCRM version other than 6.17.3, and any CMS other than Standalone.
 - The Office roaming-settings migration. The stored key changed from
   `civicrm_apikey` to `civicrm_token`, so every user re-enters the credential
