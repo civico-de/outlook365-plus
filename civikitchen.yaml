@@ -3,6 +3,12 @@ version: 1
 policy:
   license: AGPL-3.0
   copyright: 'civico GmbH'
+  # Media kept in git itself instead of Git LFS.
+  lfs_exempt:
+    paths:
+      - assets
+      - images
+    reason: 'Icons and manual screenshots the add-in and its docs serve straight from the checkout'
   renovate_preset: github>civico-de/renovate
 
   # api4-self-entity reads CamelCase first arguments out of every tracked

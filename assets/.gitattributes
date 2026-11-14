@@ -1,0 +1,2 @@
+# Kept in git itself: see policy.lfs_exempt in civikitchen.yaml.
+*.png -filter -diff -merge
