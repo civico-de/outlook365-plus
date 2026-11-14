@@ -2,7 +2,7 @@
 <extension key="outlook365" type="module">
   <file>outlook365</file>
   <name>Outlook 365 Integration</name>
-  <description>This extension integrates CiviCRM with Microsoft Outlook 365.</description>
+  <description>Outlook 365 add-in for CiviCRM: the add-in talks to CiviCRM over a token carried in a request header.</description>
   <license>AGPL-3.0</license>
   <maintainer>
     <author>civico GmbH (fork); Jaap Jansma, CiviCoop (original author)</author>

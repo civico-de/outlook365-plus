@@ -1,6 +1,5 @@
 {
   "name": "civico-de/outlook365-plus",
-  "description": "CiviCRM extension: Outlook 365 add-in talking to CiviCRM over a header-borne token.",
   "type": "civicrm-ext",
   "license": "AGPL-3.0",
   "authors": [
