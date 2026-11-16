@@ -2,6 +2,8 @@
 
 # Outlook 365 Integration for CiviCRM — civico fork
 
+> **Status: alpha.** Settings, APIs and stored data can still change between releases. Try it on a test site before you use it in production.
+
 This extension enables a user to query CiviCRM as an address book when using
 either Microsoft Outlook 365 Web and Desktop clients. It generates a Microsoft
 Outlook 365 add-in which connects Outlook 365 to the CiviCRM site; the add-in
