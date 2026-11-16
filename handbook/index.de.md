@@ -4,6 +4,8 @@ title: Outlook 365 Integration
 
 # Outlook 365 Integration
 
+![Outlook 365 Integration: die aktuelle Mail und ihre Empfänger werden zu Aktivitäten, Kontakten und Gruppen in CiviCRM](images/cover.png)
+
 Diese Extension macht CiviCRM zum Adressbuch in Microsoft Outlook 365, im Web wie im Desktop-Programm. Sie erzeugt ein Outlook-Add-in, das Outlook mit Ihrer CiviCRM-Website verbindet. Wer Mails in Outlook schreibt, kann CiviCRM-Kontakte und -Gruppen adressieren, die Personen einer Mail in CiviCRM aufnehmen und eine Mail als Aktivität ablegen, ohne Outlook zu verlassen.
 
 Das Add-in lässt sich für die ganze Organisation oder von jedem Benutzer selbst einrichten.

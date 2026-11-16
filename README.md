@@ -1,3 +1,5 @@
+![Outlook 365 Integration: the current e-mail and its recipients become activities, contacts and groups in CiviCRM](handbook/images/cover.png)
+
 # Outlook 365 Integration for CiviCRM — civico fork
 
 This extension enables a user to query CiviCRM as an address book when using
