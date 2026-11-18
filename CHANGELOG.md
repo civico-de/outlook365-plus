@@ -7,6 +7,7 @@ release of this fork.
 
 ### Changed
 
+- The manual lives in `docs/handbook/`. CiviCRM shows it with handbook 0.5.0 or newer.
 - Marked alpha.
 - The repository is now civico-de/outlook365-plus and the handbook is published at
   https://civico-de.github.io/outlook365-plus/. The extension key stays `outlook365`.
