@@ -122,6 +122,19 @@
                 "datasource": "contact"
             },
             "filter_value": []
+        },
+        {
+            "weight": "4",
+            "name": "acl_filter",
+            "title": "ACL Filter",
+            "type": "permission_to_view_contact",
+            "is_required": "0",
+            "is_exposed": "0",
+            "configuration": {
+                "field": "contact_id",
+                "datasource": "contact"
+            },
+            "filter_value": []
         }
     ],
     "fields": [
