@@ -2,18 +2,6 @@
 msgid "Manifest"
 msgstr "Manifeste"
 
-#: ./CRM/Outlook365/Upgrader.php
-msgid "Prerequisite check failed."
-msgstr "Échec de la vérification des prérequis"
-
-#: ./CRM/Outlook365/Upgrader.php
-msgid "Outlook 365 was installed successfully, but you must also install and enable the <a href=\"%1\">dataprocessor Extension</a> version %2 or newer."
-msgstr "Outlook 365 a été installé avec succès, mais vous devez également installer et activer l'extension <a href=\"%1\">dataprocessor Extension</a> version %2 ou plus récente."
-
-#: ./CRM/Outlook365/Upgrader.php
-msgid "Clé d'erreur inconnue : %1"
-msgstr ""
-
 #: ./outlook365.php
 msgid "Access Outlook 365 pages"
 msgstr "Accéder aux pages Outlook 365"

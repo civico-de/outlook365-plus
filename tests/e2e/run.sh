@@ -16,7 +16,7 @@ if [ "$(curl -s -o /dev/null -w '%{http_code}' "$BASE_URL/civicrm")" = "000" ]; 
   echo "  cd .docker && docker compose up -d" >&2
   exit 1
 fi
-for ext in outlook365 dataprocessor keyring authx; do
+for ext in outlook365 keyring authx; do
   if ! cv api4 Extension.get \
     "{\"where\":[[\"key\",\"=\",\"$ext\"],[\"status\",\"=\",\"installed\"]],\"checkPermissions\":false}" \
     | grep -q '"key"'; then

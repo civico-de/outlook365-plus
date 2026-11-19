@@ -27,22 +27,11 @@ The keyring token of each user needs these permissions in its scope:
 
 A call outside the scope fails, and the pane shows an error.
 
-## Data processors
+## Contact and group lists
 
-Enabling the extension installs two data processors, which the add-in reads through APIv3:
+The add-in reads both lists through APIv4 `Contact.get` with the user's own permissions, so contact ACLs apply. Both list contacts that are not deleted and have a primary email address, each with display name, primary email address and contact ID. The contact list also leaves out deceased contacts and those with "do not email" or "do not trade". A group lists its members with the status Added.
 
-| Data processor | API entity | Content |
-|---|---|---|
-| Outlook 365 Contacts | `Outlook365Contact` | Contacts with their display name and primary email address. Leaves out deleted and deceased contacts, those with "do not email" or "do not trade", and those the user may not view. |
-| Outlook 365 Groups | `Outlook365Group` | Group members with their display name and primary email address, for members whose status in the group is Added and who are not deleted. |
-
-The contact list in the writing pane shows every field of the contacts data processor. To show more, edit **Outlook 365 Contacts** under **Administer → Data Processor → Manage Data Processors** (**Actions → Edit**). For the primary phone number:
-
-1. **Add Data Source**: source **Phone**; under **Additional Filter Criteria** set **Is Phone is Primary** to **Yes**, so each contact shows one number.
-2. Under **Join with other sources**, set **Join Type** to **Select fields to join on** and join **Phone Contact** with **Contact :: Contact ID**. Save.
-3. **Add Field**: **Raw Field Value** of **Phone :: Phone**, with a title of your choice. Save.
-
-Other data works the same way: a data source joined to the contact, then its field. **Revert** in the list of data processors restores the shipped definition.
+Versions that read the lists through two data processors (`Outlook365Contact`, `Outlook365Group`) leave them behind when Data Processor is installed; the upgrade deletes both.
 
 ## URLs
 

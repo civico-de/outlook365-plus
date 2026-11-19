@@ -7,7 +7,7 @@ order: 10
 
 ## CiviCRM, once
 
-1. Enable `authx`, `dataprocessor`, `keyring` and this extension.
+1. Enable `authx`, `keyring` and this extension.
 2. Grant the permission **Access Outlook 365 pages** to anonymous visitors. Outlook loads the add-in's panes without a CiviCRM session.
     - Standalone: the role **Everyone, including anonymous users**.
     - WordPress: **Anonymous User**.

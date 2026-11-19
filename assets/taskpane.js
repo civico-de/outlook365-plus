@@ -10,15 +10,17 @@
     var generation = 0;
     // A page request in flight; scrolling again before it answers would ask for the same offset.
     var loading = false;
-    // Resolves once getfields has answered, so contacts never render without their secondary fields.
-    var fieldsLoaded = null;
     var search = false;
     var config = false;
 
     var myLanguage = Office.context.displayLanguage;
     var UIText = UIStrings.getLocaleStrings(myLanguage);
 
-    var fields = [];
+    // The secondary lines under each contact: row key and label.
+    var fields = [
+      {"name": "email", "title": UIText.ContactScreen.Email},
+      {"name": "contact_id", "title": UIText.ContactScreen.ContactId},
+    ];
 
     // The site URL identifies the site a token belongs to, so both sides of
     // that comparison have to be spelled the same way.
@@ -190,35 +192,26 @@
       moreAvailable = true;
       loading = false;
       search = false;
-      fields = [];
-      fieldsLoaded = currentTab === "contacts" ? getContactFields() : null;
     }
 
     /**
-     * Retrieve the secondary fields shown under each contact.
+     * APIv4 Contact.get for contacts that are not deleted and have a primary email, narrowed by
+     * params.where. Core applies the caller's permissions and contact ACLs.
      */
-    function getContactFields() {
-      if (!config) {
-        return null;
-      }
-      $('#loadingContacts').show();
-      return CiviCRM.api3(config, 'Outlook365Contact', 'getfields', {
-        "sequential": 1,
-        "api_action": "get"
-      }).done(current(function (result) {
-        fields = [];
-        if (!result.is_error) {
-          for (var i in result.values) {
-            var field = result.values[i];
-            if (field.name != 'display_name') {
-              fields.push({
-                "name": field.name,
-                "title": field.title
-              });
-            }
-          }
-        }
-      })).fail(current(showError));
+    function addressableContacts(params) {
+      var query = $.extend({
+        "select": ["id", "display_name", "email_primary.email"],
+        "orderBy": {"sort_name": "ASC", "id": "ASC"},
+      }, params);
+      query.where = [
+        ["is_deleted", "=", false],
+        ["email_primary.email", "IS NOT EMPTY"],
+      ].concat(params.where || []);
+      return CiviCRM.api4(config, 'Contact', 'get', query).then(function (result) {
+        return result.values.map(function (row) {
+          return {"contact_id": row.id, "display_name": row.display_name, "email": row["email_primary.email"]};
+        });
+      });
     }
 
     /**
@@ -387,14 +380,12 @@
      */
     function groupParams(id, term) {
       var params = {
-        "sequential": 1,
-        "options": {
-          "limit": 0,
-        },
-        "group_id": id,
+        "join": [["GroupContact AS group_contact", "INNER", ["group_contact.contact_id", "=", "id"]]],
+        "where": [["group_contact.group_id", "=", id], ["group_contact.status", "=", "Added"]],
+        "limit": 0,
       };
       if (term !== '') {
-        params.display_name = {"LIKE": '%' + term + '%'};
+        params.where.push(["display_name", "LIKE", '%' + term + '%']);
       }
       return params;
     }
@@ -404,9 +395,9 @@
      */
     async function getGroupContacts(params) {
       var items = [];
-      await CiviCRM.api3(config, 'Outlook365Group', 'get', params).done(function (data) {
-        for (var i in data.values) {
-          var contact = data.values[i];
+      await addressableContacts(params).done(function (contacts) {
+        for (var i in contacts) {
+          var contact = contacts[i];
           var contact_url = CRMContactURL;
           contact_url += "&cid=" + String(contact.contact_id);
           items.push($('<li class="ms-ListItem is-selectable">')
@@ -434,25 +425,23 @@
       }
       loading = true;
       $('#loadingContacts').show();
+      // The contact list leaves out deceased contacts and those with "do not email" or "do not trade".
       var params = {
-        "sequential": 1,
-        "options": {
-          "offset": currentOffset,
-          "limit": 25,
-        }
+        "offset": currentOffset,
+        "limit": 25,
+        "where": [["is_deceased", "=", false], ["do_not_email", "=", false], ["do_not_trade", "=", false]],
       };
       if (search) {
-        params.display_name = {"LIKE": '%' + search + '%'};
+        var term = '%' + search + '%';
+        params.where.push(["OR", [["sort_name", "LIKE", term], ["display_name", "LIKE", term]]]);
       }
-      var request = CiviCRM.api3(config, 'Outlook365Contact', 'get', params);
-      var add = current(addContacts), done = current(settle);
-      var fail = current(function () {
-        $('#loadingContacts').hide();
-        showError();
-      });
-      $.when(fieldsLoaded).always(function () {
-        request.always(done).done(add).fail(fail);
-      });
+      addressableContacts(params)
+        .always(current(settle))
+        .done(current(addContacts))
+        .fail(current(function () {
+          $('#loadingContacts').hide();
+          showError();
+        }));
     }
 
     /**
@@ -470,42 +459,40 @@
     /**
      * Add the contacts to the list.
      *
-     * @param data
+     * @param contacts
      */
-    function addContacts(data) {
+    function addContacts(contacts) {
       $('#loadingContacts').hide();
-      if (data.is_error == 0) {
-        for (var i in data.values) {
-          currentOffset++;
-          var contact = data.values[i];
-          var details = $('<div class="ms-Persona-details">')
-            .append($('<div class="ms-Persona-primaryText">').text(contact.display_name))
-            .append($('<div class="ms-ListItem-actions search-contact-profile">').append($('<div class="ms-ListItem-action">').append(
-              $('<a target="_blank">').attr('href', CRMContactURL + "&cid=" + String(contact.contact_id)).append(
-                $('<i class="ms-Icon ms-Icon--Contact">').attr('title', UIText.ContactScreen.TitleURL)
-              )
-            )))
-            .append('<div class="ms-Persona-secondaryText"></div>');
-          for (var fieldI in fields) {
-            var value = contact[fields[fieldI].name];
-            if (value) {
-              details.append($('<div class="ms-Persona-secondaryText">')
-                .append($('<strong>').text(fields[fieldI].title + ':'), '&nbsp;', document.createTextNode(value)));
-            }
+      for (var i in contacts) {
+        currentOffset++;
+        var contact = contacts[i];
+        var details = $('<div class="ms-Persona-details">')
+          .append($('<div class="ms-Persona-primaryText">').text(contact.display_name))
+          .append($('<div class="ms-ListItem-actions search-contact-profile">').append($('<div class="ms-ListItem-action">').append(
+            $('<a target="_blank">').attr('href', CRMContactURL + "&cid=" + String(contact.contact_id)).append(
+              $('<i class="ms-Icon ms-Icon--Contact">').attr('title', UIText.ContactScreen.TitleURL)
+            )
+          )))
+          .append('<div class="ms-Persona-secondaryText"></div>');
+        for (var fieldI in fields) {
+          var value = contact[fields[fieldI].name];
+          if (value) {
+            details.append($('<div class="ms-Persona-secondaryText">')
+              .append($('<strong>').text(fields[fieldI].title + ':'), '&nbsp;', document.createTextNode(value)));
           }
-          if (contact.email) {
-            details.append($('<div class="CiviCRM-Email">')
-              .attr({'data-civicrm-name': contact.display_name, 'data-civicrm-email': contact.email})
-              .append(
-                '<button class="ms-Button ms-Button--small to"><span class="ms-Button-label">' + UIText.To + '</span></button>' +
-                '<button class="ms-Button ms-Button--small cc"><span class="ms-Button-label">' + UIText.Cc + '</span></button>' +
-                '<button class="ms-Button ms-Button--small bcc"><span class="ms-Button-label">' + UIText.Bcc + '</span></button>'
-              ));
-          }
-          $('#contacts').append($('<div class="ms-Persona">').append(details));
         }
+        if (contact.email) {
+          details.append($('<div class="CiviCRM-Email">')
+            .attr({'data-civicrm-name': contact.display_name, 'data-civicrm-email': contact.email})
+            .append(
+              '<button class="ms-Button ms-Button--small to"><span class="ms-Button-label">' + UIText.To + '</span></button>' +
+              '<button class="ms-Button ms-Button--small cc"><span class="ms-Button-label">' + UIText.Cc + '</span></button>' +
+              '<button class="ms-Button ms-Button--small bcc"><span class="ms-Button-label">' + UIText.Bcc + '</span></button>'
+            ));
+        }
+        $('#contacts').append($('<div class="ms-Persona">').append(details));
       }
-      if (data.count < 25) {
+      if (contacts.length < 25) {
         moreAvailable = false;
       }
     }

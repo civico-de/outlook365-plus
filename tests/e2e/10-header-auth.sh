@@ -27,13 +27,16 @@ check "APIv3 (civicrm/ajax/rest) authenticates on X-Civi-Auth alone" \
   "$([ "$code" = "200" ] && grep -q '"is_error":0' "$OUT_DIR/v3_header.body" && echo 0 || echo 1)" \
   "http=$code $(head -c 200 "$OUT_DIR/v3_header.body")"
 
-# The two entities the task pane actually lists, served by the extension's
-# own data processors.
-for entity in Outlook365Contact Outlook365Group; do
-  code="$(addin_api3 "v3_$entity" "$entity" get '{"sequential":1,"options":{"limit":1}}' "$(auth_header)")"
-  check "APIv3 $entity.get answers on the header flow" \
-    "$([ "$code" = "200" ] && grep -q '"is_error":0' "$OUT_DIR/v3_$entity.body" && echo 0 || echo 1)" \
-    "http=$code $(head -c 200 "$OUT_DIR/v3_$entity.body")"
+# The two lists the task pane reads: contacts, and a group's members.
+V4_LISTS=(
+  '{"select":["id","display_name","email_primary.email"],"where":[["is_deleted","=",false]],"limit":1}'
+  '{"select":["id"],"join":[["GroupContact AS group_contact","INNER",["group_contact.contact_id","=","id"]]],"where":[["group_contact.status","=","Added"]],"limit":1}'
+)
+for i in 0 1; do
+  code="$(addin_api4 "v4_list$i" Contact get "${V4_LISTS[$i]}" "$(auth_header)")"
+  check "APIv4 Contact.get for list $i answers on the header flow" \
+    "$([ "$code" = "200" ] && grep -q '"count"' "$OUT_DIR/v4_list$i.body" && echo 0 || echo 1)" \
+    "http=$code $(head -c 200 "$OUT_DIR/v4_list$i.body")"
 done
 
 code="$(addin_api4 v4_header Email get "$V4_EMAIL" "$(auth_header)")"

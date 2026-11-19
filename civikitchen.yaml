@@ -77,21 +77,7 @@ policy:
       - tests/phpunit/ckHeadless.php
     reason: No PHP test suite to bootstrap
 
-  # dataprocessor IS on the public registry, but measured on a clean boot:
-  # civikitchen downloads it, enables it, and immediately enables outlook365
-  # in the same pass — and outlook365's own postInstall then queries a
-  # dataprocessor table that is not yet visible, failing the whole boot
-  # (reproduced twice, 2/2, with a fresh `docker compose up`). The
-  # digest-pinned archive path does not race the same way — it refreshes the
-  # extension container itself right after extracting. Re-cut this pin from
-  # `git rev-parse HEAD` on a `dataprocessor` checkout when it goes stale;
-  # the sha256 is what makes it safe to move.
   extension_sources:
-    - key: dataprocessor
-      version: '1.156-dev'
-      url: https://lab.civicrm.org/extensions/dataprocessor/-/archive/74725240768d1081fc68715ccc52ccacc903fd51/dataprocessor-74725240768d1081fc68715ccc52ccacc903fd51.zip
-      sha256: 74e5d63d0c839f5c5fdd074f6f32b47dc7c8fb43a3288776a26b9ae7c2e981ae
-      reason: The registry download races outlook365's own postInstall on a clean boot (measured, 2/2); the digest-pinned path refreshes the extension container and does not
     - key: keyring
       version: '0.1.0-alpha.3'
       url: https://github.com/civico-de/keyring/releases/download/v0.1.0-alpha.3/keyring-0.1.0-alpha.3.zip

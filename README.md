@@ -50,10 +50,10 @@ The delta, in full:
 | The read pane's "Save Folder in CiviCRM" removed: it listed and tagged folders through the Outlook REST API, which Microsoft has retired | `assets/readtaskpane.js`, `templates/CRM/Outlook365/Page/ReadTaskpane.tpl` |
 | The task panes made accessible: tab labels and icon-only controls exposed, the contact and group lists operable from the keyboard, the document language declared, and an axe-core check over both panes | `templates/CRM/Outlook365/Page/*.tpl`, `assets/taskpane.js`, `assets/readtaskpane.js`, `assets/taskpane.css`, `assets/UIStrings.js`, `tests/browser/a11y.spec.mjs` |
 | The group list paged on scroll instead of repeating its first page | `assets/taskpane.js` |
+| The contact list and group members read through core APIv4 `Contact.get` with the caller's permissions and contact ACLs instead of two data processors; the `dataprocessor` requirement dropped, and the upgrade and the install delete the two data processors earlier versions installed | `assets/taskpane.js`, `assets/UIStrings.js`, `info.xml`, `CRM/Outlook365/Upgrader.php`, `tests/browser/acl.spec.mjs` |
 | The inherited civix-upgrade workflow removed — it fires on every push, calls a third-party reusable workflow and names an extension key this repository does not use | `.github/` |
 
-Everything else — the data processors, the manifest and the Office glue — is
-upstream's, unchanged.
+Everything else — the manifest and the Office glue — is upstream's, unchanged.
 
 ### Rebasing on upstream
 
@@ -73,7 +73,7 @@ one does.
 
 Server side, once:
 
-* Enable `authx`, `dataprocessor`, `keyring` and this extension.
+* Enable `authx`, `keyring` and this extension.
 * Grant **Access Outlook 365 pages** to anonymous visitors — Outlook loads the
   task pane with no CiviCRM session. On Standalone that is the `everyone` role.
 * Leave `authx_guards` containing `perm`, and `authx_xheader_cred` containing
@@ -94,7 +94,6 @@ operations guide on report mode in <https://github.com/civico-de/keyring>.
 ## Development
 
 ```bash
-.docker/fetch-ext.sh                    # once: clone dataprocessor
 cd .docker && docker compose up -d      # CiviCRM on http://localhost:8200 (admin/admin)
 
 bash tests/e2e/run.sh                   # from the host, against that stack
@@ -117,8 +116,8 @@ from the `office-ui-fabric-js` package at the version the pages load; any other
 request to an external host fails the test. `CIVICRM_BASE_URL` (default
 `http://localhost:8200`) and `CK_COMPOSE_FILE` point it at another stack.
 
-The compose project is named `outlook365` and mounts this checkout, the sibling
-`keyring` checkout and the cached `dataprocessor` clone.
+The compose project is named `outlook365` and mounts this checkout and the
+sibling `keyring` checkout.
 `docker compose down -v && docker compose up -d` re-runs provisioning from
 scratch.
 
@@ -135,8 +134,8 @@ npm run test:e2e
 ```
 
 plus `ckinit --check` for template drift and a disable/enable/uninstall/install
-pass (`lifecycle: true`). `keyring` and `dataprocessor` resolve through the
-archives pinned in `civikitchen.yaml` (`policy.extension_sources`) in every job.
+pass (`lifecycle: true`). `keyring` resolves through the
+archive pinned in `civikitchen.yaml` (`policy.extension_sources`) in every job.
 The e2e job boots the CI stack with port 8200 published; the browser suite runs
 in civikitchen's `playwright` job on its own stack (port 8080).
 
@@ -151,7 +150,6 @@ in civikitchen's `playwright` job on its own stack (port 8080).
 
 * CiviCRM 6.17 or newer (measured on 6.17.3)
 * PHP 8.2 or newer (measured on 8.4.25)
-* Data Processor 1.1.0 or newer
 * [keyring](https://github.com/civico-de/keyring)
 * Microsoft Office 365
 

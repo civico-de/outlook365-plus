@@ -7,6 +7,12 @@ release of this fork.
 
 ### Changed
 
+- The contact list and group members are read through core APIv4 `Contact.get` with the user's
+  permissions and contact ACLs; a group no longer lists members the user may not view. The
+  Data Processor extension is no longer required. The upgrade, and an install over an
+  uninstalled earlier version, delete the two data processors earlier versions installed,
+  including any local changes to them. The contact list shows email address and contact ID;
+  fields added to the contacts data processor no longer appear.
 - The manual lives in `docs/handbook/`. CiviCRM shows it with handbook 0.5.0 or newer.
 - Marked alpha.
 - The repository is now civico-de/outlook365-plus and the handbook is published at

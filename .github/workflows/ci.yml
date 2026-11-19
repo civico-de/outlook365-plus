@@ -37,8 +37,8 @@ jobs:
   ci:
     uses: civico-de/civikitchen/.github/workflows/extension-ci.yml@v1
 # END CIVIKITCHEN MANAGED caller
-    # keyring and dataprocessor come from the archives pinned in civikitchen.yaml
-    # policy.extension_sources, so they need no wiring here.
+    # keyring comes from the archive pinned in civikitchen.yaml
+    # policy.extension_sources, so it needs no wiring here.
     #
     # `playwright` runs tests/browser/: the real task pane pages in Chromium,
     # office.js replaced by a stub, against the same stack with keyring installed.

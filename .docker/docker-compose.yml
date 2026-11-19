@@ -1,8 +1,7 @@
 # Dev stack for the fork: CiviCRM (civikitchen standalone) + MariaDB, with
-# keyring and dataprocessor mounted alongside this extension.
+# keyring mounted alongside this extension.
 #
 # Usage:
-#   ./fetch-ext.sh                            # once: clone dataprocessor
 #   cd .docker && docker compose up -d        # first boot: auto-install + provisioning
 #
 # URL:  CiviCRM http://localhost:8200 (admin/admin)
@@ -36,14 +35,11 @@ services:
       CIVIKITCHEN_PROFILE: dev
       CIVIKITCHEN_PROFILE_PATH: /civikitchen-profiles
       CIVIKITCHEN_TRUST_EXTERNAL_PROFILES: "1"
-      # Order matters: dataprocessor is a <requires> of this extension, and
-      # keyring owns the credential this extension sends.
-      CIVIKITCHEN_ENABLE_EXTENSIONS: "authx,dataprocessor,keyring,outlook365"
+      # Order matters: keyring owns the credential this extension sends.
+      CIVIKITCHEN_ENABLE_EXTENSIONS: "authx,keyring,outlook365"
     volumes:
       - ..:/var/www/html/ext/outlook365
       - ../../keyring:/var/www/html/ext/keyring:ro
-      # Same expression as fetch-ext.sh's DEST; keep the two in step.
-      - ${OUTLOOK365_EXT_DIR:-${HOME}/.cache/outlook365-ext}/dataprocessor:/var/www/html/ext/dataprocessor:ro
       - ./profiles:/civikitchen-profiles:ro
       - ./init.d:/civikitchen-init.d:ro
 

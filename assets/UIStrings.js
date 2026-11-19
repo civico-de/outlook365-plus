@@ -19,6 +19,8 @@ var UIStrings = (function () {
     "ContactScreen": {
       "Placeholder": "Search",
       "TitleURL": "View Contact in CiviCRM",
+      "Email": "Email",
+      "ContactId": "Contact ID",
     },
     "GroupScreen": {
       "Placeholder": "Search Group",
@@ -84,6 +86,8 @@ var UIStrings = (function () {
     "ContactScreen": {
       "Placeholder": "Buscar",
       "TitleURL": "Ver el contacto en CiviCRM",
+      "Email": "Correo electrónico",
+      "ContactId": "ID de contacto",
     },
     "GroupScreen": {
       "Placeholder": "Buscar grupos",
@@ -128,6 +132,8 @@ var UIStrings = (function () {
     "ContactScreen": {
       "Placeholder": "Cerca",
       "TitleURL": "Veure el contacte a CiviCRM",
+      "Email": "Correu electrònic",
+      "ContactId": "ID de contacte",
     },
     "GroupScreen": {
       "Placeholder": "Cerca de grups",
@@ -171,6 +177,8 @@ var UIStrings = (function () {
     "ContactScreen": {
       "Placeholder": "Recherche",
       "TitleURL": "Voir le contact dans CiviCRM",
+      "Email": "Courriel",
+      "ContactId": "ID du contact",
     },
     "GroupScreen": {
       "Placeholder": "Groupe de recherche",

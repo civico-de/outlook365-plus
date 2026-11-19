@@ -38,7 +38,7 @@ This is a maintained fork of the [upstream extension](https://lab.civicrm.org/ex
 
 - CiviCRM at the version listed in the extension's `info.xml` or newer.
 - PHP 8.2 or newer.
-- The extensions [Data Processor](https://civicrm.org/extensions/data-processor) 1.1.0 or newer and [keyring](https://github.com/civico-de/keyring), and the core extension `authx`.
+- The extension [keyring](https://github.com/civico-de/keyring) and the core extension `authx`.
 - Microsoft Outlook 365.
 
 ## Install
@@ -46,7 +46,7 @@ This is a maintained fork of the [upstream extension](https://lab.civicrm.org/ex
 Download the release archive from the [releases page](https://github.com/civico-de/outlook365-plus/releases), unpack it into your CiviCRM extensions directory and enable it after its requirements:
 
 ```bash
-cv ext:enable authx dataprocessor keyring outlook365
+cv ext:enable authx keyring outlook365
 ```
 
-Enabling installs the two data processors the add-in reads contacts and groups through. Continue with [Setup](setup.md).
+Continue with [Setup](setup.md).

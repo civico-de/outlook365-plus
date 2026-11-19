@@ -3,18 +3,6 @@
 require_once 'outlook365.civix.php';
 use CRM_Outlook365_ExtensionUtil as E;
 
-/**
- * Implementation of hook_civicrm_pageRun()
- *
- * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_pageRun/
- */
-function outlook365_civicrm_pageRun(&$page) {
-  if ($page instanceof CRM_Admin_Page_Extensions) {
-    $unmet = CRM_Outlook365_Upgrader::checkExtensionDependencies();
-    CRM_Outlook365_Upgrader::displayDependencyErrors($unmet);
-  }
-}
-
 function outlook365_civicrm_permission(&$permissions) {
   $permissions['access outlook 365 pages'] = [
     'label' => E::ts('Access Outlook 365 pages'),

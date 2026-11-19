@@ -1,5 +1,6 @@
 <?php
-use CRM_Outlook365_ExtensionUtil as E;
+
+declare(strict_types = 1);
 
 /**
  * Collection of upgrade steps.
@@ -7,80 +8,31 @@ use CRM_Outlook365_ExtensionUtil as E;
 class CRM_Outlook365_Upgrader extends CRM_Extension_Upgrader_Base {
 
   /**
-   * Add the data processor from this extension
-   *
-   * @throws \CRM_Core_Exception
+   * An uninstalled earlier version leaves its data processors behind; install skips upgrade steps.
    */
-  public function postInstall() {
-    CRM_Dataprocessor_Utils_Extensions::updateDataProcessorsFromExtension('outlook365');
+  public function install(): void {
+    self::removeDataProcessors();
+  }
+
+  public function upgrade_3200(): bool {
+    self::removeDataProcessors();
+    return TRUE;
   }
 
   /**
-   * Look up extension dependency error messages and display as Core Session Status
-   *
-   * @param array $unmet
+   * Removes the contact and group data processors earlier versions installed.
+   * Their tables belong to the dataprocessor extension; child rows go by ON DELETE CASCADE.
    */
-  public static function displayDependencyErrors(array $unmet){
-    foreach ($unmet as $ext) {
-      $message = self::getUnmetDependencyErrorMessage($ext);
-      CRM_Core_Session::setStatus($message, E::ts('Prerequisite check failed.'), 'error');
+  private static function removeDataProcessors(): void {
+    if (!CRM_Core_DAO::checkTableExists('civicrm_data_processor')) {
+      return;
     }
-  }
-
-  /**
-   * Mapping of extensions names to localized dependency error messages
-   *
-   * @param string $unmet an extension name
-   */
-  public static function getUnmetDependencyErrorMessage($unmet) {
-    switch ($unmet[0]) {
-      case 'dataprocessor':
-        return ts('Outlook 365 was installed successfully, but you must also install and enable the <a href="%1">dataprocessor Extension</a> version %2 or newer.', array(1 => 'https://lab.civicrm.org/extensions/dataprocessor', 2=>$unmet[1]));
-    }
-
-    CRM_Core_Error::fatal(ts('Unknown error key: %1', array(1 => $unmet)));
-  }
-
-  /**
-   * Extension Dependency Check
-   *
-   * @return Array of names of unmet extension dependencies; NOTE: returns an
-   *         empty array when all dependencies are met.
-   */
-  public static function checkExtensionDependencies() {
-    $manager = CRM_Extension_System::singleton()->getManager();
-
-    $dependencies = array(
-      ['dataprocessor', '1.1']
+    CRM_Core_DAO::executeQuery(
+      "DELETE FROM civicrm_data_processor WHERE name IN ('outlook_365_contacts', 'outlook_365_groups')"
     );
-
-    $unmet = array();
-    foreach($dependencies as $ext) {
-      if (!self::checkExtensionVersion($ext[0], $ext[1])) {
-        array_push($unmet, $ext);
-      }
+    if (class_exists(CRM_Dataprocessor_Utils_Cache::class)) {
+      CRM_Dataprocessor_Utils_Cache::clearAllDataProcessorCaches();
     }
-    return $unmet;
-  }
-
-  public static function checkExtensionVersion($extension, $version) {
-    try {
-      static $extensions = null;
-      if (!$extensions) {
-        $extensions = civicrm_api3('Extension', 'get', array('options' => array('limit' => 0)));
-      }
-      foreach($extensions['values'] as $ext) {
-        if ($ext['key'] == $extension && $ext['status'] == 'installed') {
-          if (version_compare($ext['version'], $version, '>=')) {
-            return true;
-          }
-        }
-      }
-    }
-    catch (Exception $e) {
-      return FALSE;
-    }
-    return FALSE;
   }
 
 }

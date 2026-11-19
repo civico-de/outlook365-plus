@@ -71,13 +71,9 @@ test("a search sent before the first list arrives shows only its own results", a
   const held = new Promise((resolve) => {
     release = resolve;
   });
-  await page.route(`${h.BASE_URL}/civicrm/ajax/rest`, async (r) => {
-    const body = new URLSearchParams(r.request().postData() || "");
-    const unfiltered =
-      body.get("entity") === "Outlook365Contact" &&
-      body.get("action") === "get" &&
-      !JSON.parse(body.get("json") || "{}").display_name;
-    if (unfiltered) await held;
+  await page.route(`${h.BASE_URL}/civicrm/ajax/**`, async (r) => {
+    const c = apiCall(r.request());
+    if (isContacts(c) && !searched(c)) await held;
     return r.fallback();
   });
   const log = await h.openPane(page, "taskpane.html", { item: compose, roaming: configured() });
@@ -244,15 +240,23 @@ test("a group is expanded, selected and addressed from the keyboard alone", asyn
   h.assertNetwork(log, minted.token, key);
 });
 
-// The API call a request carries: entity, action and the decoded APIv3 params.
+// The API call a request carries: entity, action and the decoded APIv3 or APIv4 params.
 const apiCall = (request) => {
   const body = new URLSearchParams(request.postData() || "");
+  const v4 = new URL(request.url()).pathname.match(/\/civicrm\/ajax\/api4\/([^/]+)\/([^/]+)$/);
+  if (v4) {
+    return { entity: v4[1], action: v4[2], params: JSON.parse(body.get("params") || "{}") };
+  }
   return {
     entity: body.get("entity"),
     action: body.get("action"),
     params: JSON.parse(body.get("json") || "{}"),
   };
 };
+// The contact search, a group's members, and whether a call carries a search term.
+const isContacts = (c) => c.entity === "Contact" && c.action === "get" && !c.params.join;
+const isMembers = (c) => c.entity === "Contact" && c.action === "get" && !!c.params.join;
+const searched = (c) => JSON.stringify(c.params.where || []).includes("LIKE");
 // Holds the first API call that `match` accepts until the returned release() is called.
 async function holdFirst(page, match) {
   let release;
@@ -260,7 +264,7 @@ async function holdFirst(page, match) {
     release = resolve;
   });
   let taken = false;
-  await page.route(`${h.BASE_URL}/civicrm/ajax/rest`, async (r) => {
+  await page.route(`${h.BASE_URL}/civicrm/ajax/**`, async (r) => {
     if (!taken && match(apiCall(r.request()))) {
       taken = true;
       await held;
@@ -283,51 +287,14 @@ async function settled(page) {
 }
 const groupRow = (page, title) => page.locator("#groups .ms-Persona").filter({ hasText: title });
 
-test("contacts that arrive before getfields still show their secondary fields", async ({
-  page,
-}) => {
-  const release = await holdFirst(
-    page,
-    (c) => c.entity === "Outlook365Contact" && c.action === "getfields",
-  );
-  const answered = page.waitForResponse((r) => {
-    const c = apiCall(r.request());
-    return c.entity === "Outlook365Contact" && c.action === "get";
-  });
-  const log = await h.openPane(page, "taskpane.html", { item: compose, roaming: configured() });
-  await answered;
-  release();
-  const first = page.locator("#contacts .ms-Persona").first();
-  await expect(first).toBeVisible();
-  await expect(first.locator(".ms-Persona-secondaryText strong").first()).toHaveText(/:$/);
-  h.assertNetwork(log, minted.token, key);
-});
-
-test("a getfields failure from before a search does not show an error over its results", async ({
-  page,
-}) => {
-  let release;
-  const held = new Promise((resolve) => {
-    release = resolve;
-  });
-  let taken = false;
-  await page.route(`${h.BASE_URL}/civicrm/ajax/rest`, async (r) => {
-    const c = apiCall(r.request());
-    if (!taken && c.entity === "Outlook365Contact" && c.action === "getfields") {
-      taken = true;
-      await held;
-      return r.fulfill({ status: 500, body: "" });
-    }
-    return r.fallback();
-  });
+test("each contact shows its email address and contact id", async ({ page }) => {
   const log = await h.openPane(page, "taskpane.html", { item: compose, roaming: configured() });
   await page.locator("#searchField").fill(`Example ${run}`);
   await page.locator("#searchField").press("Enter");
-  await expect(page.locator("#contacts .ms-Persona")).toHaveCount(1);
-  release();
-  await settled(page);
-  await expect(page.locator("#civicrm-error")).toBeHidden();
-  await expect(page.locator("#contacts .ms-Persona")).toHaveCount(1);
+  const found = page.locator("#contacts .ms-Persona");
+  await expect(found).toHaveCount(1);
+  await expect(found.locator(".ms-Persona-secondaryText strong")).toHaveText(["Email:", "Contact ID:"]);
+  await expect(found.locator(".ms-Persona-secondaryText").nth(1)).toContainText(person.email);
   h.assertNetwork(log, minted.token, key);
 });
 
@@ -336,7 +303,7 @@ test("a group expanded, collapsed and expanded again while loading shows its mem
 }) => {
   const release = await holdFirst(
     page,
-    (c) => c.entity === "Outlook365Group" && c.action === "get",
+    isMembers,
   );
   const log = await h.openPane(page, "taskpane.html", { item: compose, roaming: configured() });
   await page.getByRole("tab", { name: "Groups", exact: true }).click();
@@ -366,8 +333,8 @@ test("a group's members failing after the list was reset show no error", async (
     release = resolve;
   });
   let taken = false;
-  await page.route(`${h.BASE_URL}/civicrm/ajax/rest`, async (r) => {
-    if (!taken && apiCall(r.request()).entity === "Outlook365Group") {
+  await page.route(`${h.BASE_URL}/civicrm/ajax/**`, async (r) => {
+    if (!taken && isMembers(apiCall(r.request()))) {
       taken = true;
       await held;
       return r.fulfill({ status: 500, body: "" });
@@ -392,8 +359,7 @@ test("a cleared in-group search lists every member, whatever answers last", asyn
   const miss = `nomatch${run}`;
   const release = await holdFirst(
     page,
-    (c) =>
-      c.entity === "Outlook365Group" && JSON.stringify(c.params.display_name || "").includes(miss),
+    (c) => isMembers(c) && JSON.stringify(c.params.where).includes(miss),
   );
   const log = await h.openPane(page, "taskpane.html", { item: compose, roaming: configured() });
   await page.getByRole("tab", { name: "Groups", exact: true }).click();
@@ -415,9 +381,9 @@ test("a cleared in-group search lists every member, whatever answers last", asyn
   await expect(group.locator(".ms-ListItem")).toHaveText(person.name);
   const last = log.requests
     .map(apiCall)
-    .filter((c) => c.entity === "Outlook365Group")
+    .filter(isMembers)
     .at(-1);
-  expect(last.params.display_name).toBeUndefined();
+  expect(searched(last)).toBe(false);
   h.assertNetwork(log, minted.token, key);
 });
 
@@ -445,13 +411,16 @@ test("Cc on one expanded group adds only that group's selection", async ({ page 
 });
 
 // Which pages a filtered list asked the server for, in order.
-const pageOffsets = (log, entity) =>
+const contactOffsets = (log) =>
   log.requests
-    .map((r) => new URLSearchParams(r.postData() || ""))
-    .filter((b) => b.get("entity") === entity && b.get("action") === "get")
-    .map((b) => JSON.parse(b.get("json")))
-    .filter((p) => p.display_name || p.title)
-    .map((p) => p.options.offset);
+    .map(apiCall)
+    .filter((c) => isContacts(c) && searched(c))
+    .map((c) => c.params.offset);
+const groupOffsets = (log) =>
+  log.requests
+    .map(apiCall)
+    .filter((c) => c.entity === "Group" && c.action === "get" && c.params.title)
+    .map((c) => c.params.options.offset);
 const scrollToEnd = (page) =>
   page.evaluate(() => {
     window.scrollTo(0, document.documentElement.scrollHeight);
@@ -464,7 +433,7 @@ test.describe("a list longer than one page", () => {
   const tag = `Scroll ${run}`;
 
   test.beforeAll(() => {
-    // The data processor behind the contact list joins an email address, so each one needs one.
+    // The contact list shows only contacts with a primary email address.
     const created = h.cv("Contact.save", {
       records: Array.from({ length: COUNT }, (_, i) => ({
         contact_type: "Individual",
@@ -496,17 +465,17 @@ test.describe("a list longer than one page", () => {
     await page.locator("#searchField").fill(tag);
     await page.locator("#searchField").press("Enter");
     await expect(page.locator("#contacts .ms-Persona")).toHaveCount(PAGE);
-    expect(pageOffsets(log, "Outlook365Contact")).toEqual([0]);
+    expect(contactOffsets(log)).toEqual([0]);
 
     await scrollToEnd(page);
     await expect(page.locator("#contacts .ms-Persona")).toHaveCount(COUNT);
-    expect(pageOffsets(log, "Outlook365Contact")).toEqual([0, PAGE]);
+    expect(contactOffsets(log)).toEqual([0, PAGE]);
 
     // The list is exhausted: further scrolling asks for nothing more.
     await scrollToEnd(page);
     await scrollToEnd(page);
     await page.waitForLoadState("networkidle");
-    expect(pageOffsets(log, "Outlook365Contact")).toEqual([0, PAGE]);
+    expect(contactOffsets(log)).toEqual([0, PAGE]);
     await expect(page.locator("#contacts .ms-Persona")).toHaveCount(COUNT);
     h.assertNetwork(log, minted.token, key);
   });
@@ -520,18 +489,17 @@ test.describe("a list longer than one page", () => {
 
     const release = await holdFirst(
       page,
-      (c) =>
-        c.entity === "Outlook365Contact" && c.action === "get" && c.params.options.offset === PAGE,
+      (c) => isContacts(c) && c.params.offset === PAGE,
     );
     await scrollToEnd(page);
-    await expect.poll(() => pageOffsets(log, "Outlook365Contact")).toEqual([0, PAGE]);
+    await expect.poll(() => contactOffsets(log)).toEqual([0, PAGE]);
     await page.evaluate(() => {
       window.dispatchEvent(new Event("scroll"));
       window.dispatchEvent(new Event("scroll"));
     });
     release();
     await settled(page);
-    expect(pageOffsets(log, "Outlook365Contact")).toEqual([0, PAGE]);
+    expect(contactOffsets(log)).toEqual([0, PAGE]);
     await expect(page.locator("#contacts .ms-Persona")).toHaveCount(COUNT);
     h.assertNetwork(log, minted.token, key);
   });
@@ -543,16 +511,16 @@ test.describe("a list longer than one page", () => {
     await page.locator("#searchField").fill(tag);
     await page.locator("#searchField").press("Enter");
     await expect(page.locator("#groups .ms-Persona")).toHaveCount(PAGE);
-    expect(pageOffsets(log, "Group")).toEqual([0]);
+    expect(groupOffsets(log)).toEqual([0]);
 
     await scrollToEnd(page);
     await expect(page.locator("#groups .ms-Persona")).toHaveCount(COUNT);
-    expect(pageOffsets(log, "Group")).toEqual([0, PAGE]);
+    expect(groupOffsets(log)).toEqual([0, PAGE]);
 
     await scrollToEnd(page);
     await scrollToEnd(page);
     await page.waitForLoadState("networkidle");
-    expect(pageOffsets(log, "Group")).toEqual([0, PAGE]);
+    expect(groupOffsets(log)).toEqual([0, PAGE]);
     await expect(page.locator("#groups .ms-Persona")).toHaveCount(COUNT);
     h.assertNetwork(log, minted.token, key);
   });

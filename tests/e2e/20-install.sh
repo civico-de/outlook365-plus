@@ -12,9 +12,9 @@ echo
 
 note "$(cv ev 'echo "CiviCRM " . CRM_Utils_System::version() . ", PHP " . PHP_VERSION . ", Smarty " . \Smarty\Smarty::SMARTY_VERSION;')"
 
-cv api4 Extension.get '{"where":[["key","IN",["outlook365","dataprocessor","keyring","authx"]]],"select":["key","status"],"checkPermissions":false}' \
+cv api4 Extension.get '{"where":[["key","IN",["outlook365","keyring","authx"]]],"select":["key","status"],"checkPermissions":false}' \
   > "$OUT_DIR/extensions.json"
-for ext in outlook365 dataprocessor keyring authx; do
+for ext in outlook365 keyring authx; do
   check "$ext is installed" \
     "$(python3 -c "
 import json,sys
@@ -39,10 +39,7 @@ for page in taskpane.html readtaskpane.html; do
     "$(grep -oE '\{(ts|literal|crmScope|\$)[^}]*\}' "$OUT_DIR/page_$page.body" 2>/dev/null | head -3)"
 done
 
-# The data processors the add-in ships back its Outlook365* APIv3 entities.
-for dp in outlook_365_contacts outlook_365_groups; do
-  check "data processor $dp is installed and active" \
-    "$([ "$(sql "SELECT COUNT(*) FROM civicrm_data_processor WHERE name = '$dp' AND is_active = 1")" = "1" ] && echo 0 || echo 1)"
-done
+check "info.xml does not require dataprocessor" \
+  "$(grep -q '<ext>dataprocessor</ext>' "$(dirname "$0")/../../info.xml" && echo 1 || echo 0)"
 
 finish
