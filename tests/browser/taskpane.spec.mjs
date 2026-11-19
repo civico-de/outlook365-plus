@@ -293,7 +293,10 @@ test("each contact shows its email address and contact id", async ({ page }) => 
   await page.locator("#searchField").press("Enter");
   const found = page.locator("#contacts .ms-Persona");
   await expect(found).toHaveCount(1);
-  await expect(found.locator(".ms-Persona-secondaryText strong")).toHaveText(["Email:", "Contact ID:"]);
+  await expect(found.locator(".ms-Persona-secondaryText strong")).toHaveText([
+    "Email:",
+    "Contact ID:",
+  ]);
   await expect(found.locator(".ms-Persona-secondaryText").nth(1)).toContainText(person.email);
   h.assertNetwork(log, minted.token, key);
 });
@@ -301,10 +304,7 @@ test("each contact shows its email address and contact id", async ({ page }) => 
 test("a group expanded, collapsed and expanded again while loading shows its members once", async ({
   page,
 }) => {
-  const release = await holdFirst(
-    page,
-    isMembers,
-  );
+  const release = await holdFirst(page, isMembers);
   const log = await h.openPane(page, "taskpane.html", { item: compose, roaming: configured() });
   await page.getByRole("tab", { name: "Groups", exact: true }).click();
   await expect(page.locator("#groups .ms-Persona").first()).toBeVisible();
@@ -379,10 +379,7 @@ test("a cleared in-group search lists every member, whatever answers last", asyn
   release();
   await settled(page);
   await expect(group.locator(".ms-ListItem")).toHaveText(person.name);
-  const last = log.requests
-    .map(apiCall)
-    .filter(isMembers)
-    .at(-1);
+  const last = log.requests.map(apiCall).filter(isMembers).at(-1);
   expect(searched(last)).toBe(false);
   h.assertNetwork(log, minted.token, key);
 });
@@ -487,10 +484,7 @@ test.describe("a list longer than one page", () => {
     await page.locator("#searchField").press("Enter");
     await expect(page.locator("#contacts .ms-Persona")).toHaveCount(PAGE);
 
-    const release = await holdFirst(
-      page,
-      (c) => isContacts(c) && c.params.offset === PAGE,
-    );
+    const release = await holdFirst(page, (c) => isContacts(c) && c.params.offset === PAGE);
     await scrollToEnd(page);
     await expect.poll(() => contactOffsets(log)).toEqual([0, PAGE]);
     await page.evaluate(() => {

@@ -8,7 +8,11 @@ const SCOPE = ["access CiviCRM", "access AJAX API"];
 const run = `acl${Date.now().toString(36)}`;
 const permitted = { name: `Pat Allowed ${run}`, email: `pat.${run}@example.org` };
 const outside = { name: `Olli Outside ${run}`, email: `olli.${run}@example.org` };
-const noTrade = { name: `Dana Allowed ${run}`, email: `dana.${run}@example.org`, do_not_trade: true };
+const noTrade = {
+  name: `Dana Allowed ${run}`,
+  email: `dana.${run}@example.org`,
+  do_not_trade: true,
+};
 const mixedTitle = `Mixed group ${run}`;
 const compose = { mode: "compose" };
 
@@ -60,7 +64,12 @@ test.beforeAll(() => {
   created.roleValue = role.value;
   created.roles.push(role.id);
   h.cv("ACLEntityRole.create", {
-    values: { acl_role_id: role.value, entity_table: "civicrm_group", entity_id: subjects, is_active: true },
+    values: {
+      acl_role_id: role.value,
+      entity_table: "civicrm_group",
+      entity_id: subjects,
+      is_active: true,
+    },
   });
   const [acl] = h.cv("ACL.create", {
     values: {
@@ -98,7 +107,9 @@ test("the contact search lists only contacts the token's ACL may view", async ({
   h.assertNetwork(log, minted.token, key);
 });
 
-test("a group's members leave out contacts the token's ACL may not view, not those marked do not trade", async ({ page }) => {
+test("a group's members leave out contacts the token's ACL may not view, not those marked do not trade", async ({
+  page,
+}) => {
   // The group id is the caller's to choose; the listing is replaced so the pane asks for this one.
   await page.route(`${h.BASE_URL}/civicrm/ajax/rest`, async (r) => {
     const body = new URLSearchParams(r.request().postData() || "");
