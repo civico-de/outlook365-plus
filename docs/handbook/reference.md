@@ -36,7 +36,13 @@ Enabling the extension installs two data processors, which the add-in reads thro
 | Outlook 365 Contacts | `Outlook365Contact` | Contacts with their display name and primary email address. Leaves out deleted and deceased contacts, those with "do not email" or "do not trade", and those the user may not view. |
 | Outlook 365 Groups | `Outlook365Group` | Group members with their display name and primary email address, for members whose status in the group is Added and who are not deleted. |
 
-The contact list in the writing pane shows every field of the contacts data processor. To show more, for example the phone number, edit **Outlook 365 Contacts** under **Administer → Data Processor → Manage Data Processors**: add a data source for the data you need, joined to the contact, and add its field. **Revert** in the list of data processors restores the shipped definition.
+The contact list in the writing pane shows every field of the contacts data processor. To show more, edit **Outlook 365 Contacts** under **Administer → Data Processor → Manage Data Processors** (**Actions → Edit**). For the primary phone number:
+
+1. **Add Data Source**: source **Phone**; under **Additional Filter Criteria** set **Is Phone is Primary** to **Yes**, so each contact shows one number.
+2. Under **Join with other sources**, set **Join Type** to **Select fields to join on** and join **Phone Contact** with **Contact :: Contact ID**. Save.
+3. **Add Field**: **Raw Field Value** of **Phone :: Phone**, with a title of your choice. Save.
+
+Other data works the same way: a data source joined to the contact, then its field. **Revert** in the list of data processors restores the shipped definition.
 
 ## URLs
 

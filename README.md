@@ -144,8 +144,7 @@ in civikitchen's `playwright` job on its own stack (port 8080).
 
 | Document | What it covers |
 | --- | --- |
-| [docs/GettingStarted.md](docs/GettingStarted.md) | Installing the extension and adding the add-in to Outlook 365 |
-| [docs/HowToAddPhoneNumber.md](docs/HowToAddPhoneNumber.md) | Adding the phone number, or any other CiviCRM data, to Outlook 365 |
+| [docs/handbook/](docs/handbook/index.md) | The user manual: setup, using the add-in, reference |
 | [docs/measurements.md](docs/measurements.md) | What was measured on CiviCRM 6.17.3: installability, the header flow, why the site key could go, required authx settings |
 
 ## Requirements

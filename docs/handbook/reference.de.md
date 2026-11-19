@@ -36,7 +36,13 @@ Beim Aktivieren installiert die Extension zwei Data Processors, die das Add-in �
 | Outlook 365 Contacts | `Outlook365Contact` | Kontakte mit Anzeigename und primärer E-Mail-Adresse. Lässt gelöschte und verstorbene Kontakte aus, solche mit „keine E-Mails“ oder „kein Handel“ und solche, die der Benutzer nicht sehen darf. |
 | Outlook 365 Groups | `Outlook365Group` | Gruppenmitglieder mit Anzeigename und primärer E-Mail-Adresse, für Mitglieder mit dem Status „Added“ in der Gruppe, die nicht gelöscht sind. |
 
-Die Kontaktliste beim Schreiben zeigt jedes Feld des Kontakt-Data-Processors. Um mehr zu zeigen, etwa die Telefonnummer, bearbeiten Sie **Outlook 365 Contacts** unter **Administer → Data Processor → Manage Data Processors**: Fügen Sie eine Datenquelle für die gewünschten Daten hinzu, verknüpft mit dem Kontakt, und fügen Sie ihr Feld hinzu. **Revert** in der Liste der Data Processors stellt die mitgelieferte Definition wieder her.
+Die Kontaktliste beim Schreiben zeigt jedes Feld des Kontakt-Data-Processors. Um mehr zu zeigen, bearbeiten Sie **Outlook 365 Contacts** unter **Administer → Data Processor → Manage Data Processors** (**Actions → Edit**). Für die primäre Telefonnummer:
+
+1. **Add Data Source**: Quelle **Phone**; unter **Additional Filter Criteria** setzen Sie **Is Phone is Primary** auf **Yes**, damit jeder Kontakt eine Nummer zeigt.
+2. Unter **Join with other sources** setzen Sie **Join Type** auf **Select fields to join on** und verknüpfen **Phone Contact** mit **Contact :: Contact ID**. Speichern.
+3. **Add Field**: **Raw Field Value** von **Phone :: Phone**, mit einem Titel Ihrer Wahl. Speichern.
+
+Andere Daten gehen genauso: eine Datenquelle, mit dem Kontakt verknüpft, dann ihr Feld. **Revert** in der Liste der Data Processors stellt die mitgelieferte Definition wieder her.
 
 ## URLs
 
