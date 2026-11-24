@@ -5,6 +5,8 @@ release of this fork.
 
 ## [Unreleased]
 
+## [4.0.0] - 2026-11-24
+
 ### Changed
 
 - The contact list and group members are read through core APIv4 `Contact.get` with the user's
@@ -174,7 +176,8 @@ release of this fork.
   recipients as targets.
 - Two data processors that back the add-in's contact and group lists.
 
-[Unreleased]: https://github.com/civico-de/outlook365-plus/compare/v3.1.2...HEAD
+[Unreleased]: https://github.com/civico-de/outlook365-plus/compare/v4.0.0...HEAD
+[4.0.0]: https://github.com/civico-de/outlook365-plus/compare/v3.1.2...v4.0.0
 [3.1.2]: https://github.com/civico-de/outlook365-plus/compare/v3.1.1...v3.1.2
 [3.1.1]: https://github.com/civico-de/outlook365-plus/compare/v3.1.0...v3.1.1
 [3.1.0]: https://github.com/civico-de/outlook365-plus/compare/v3.0.1...v3.1.0
