@@ -73,8 +73,6 @@ policy:
   template_custom:
     paths:
       - phpunit.xml.dist
-      - tests/phpunit/bootstrap.php
-      - tests/phpunit/ckHeadless.php
     reason: No PHP test suite to bootstrap
 
   extension_sources:
