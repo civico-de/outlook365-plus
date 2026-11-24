@@ -28,7 +28,7 @@ parameters:
 		- tests/e2e/seed.php
 	# The upstream classes the analysed code refers to, resolved but not judged.
 	# Role and User come from standaloneusers, a bundled core extension that
-	# sits off the classloader path phpstanBootstrap.php registers.
+	# sits off the classloader path the civikitchen phpstan bootstrap registers.
 	scanDirectories:
 		- Civi
 		- CRM
@@ -38,11 +38,11 @@ parameters:
 	# scanDirectories:
 	#	# Core component extensions live off the classloader path — add the
 	#	# ones whose types you touch (extensions in info.xml <requires> are
-	#	# autoloaded by phpstanBootstrap.php already), e.g.:
+	#	# autoloaded by the civikitchen phpstan bootstrap already), e.g.:
 	#	# - /var/www/html/core/ext/civi_mail
 	#	# - /var/www/html/core/ext/flexmailer/src
 	bootstrapFiles:
-		- phpstanBootstrap.php
+		- /opt/civikitchen/toolbelt/phpstan-config/bootstrap.php
 	civikitchen:
 		# ck.sql.unknownTable checks `civicrm_`-prefixed table names in raw SQL
 		# against core's schema plus this repo's own (schema/, xml/schema/,
